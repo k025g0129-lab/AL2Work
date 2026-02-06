@@ -1,17 +1,23 @@
 #pragma once
 #include "KamataEngine.h"
 
-class GameScene
-{
+class GameScene{
 public:
 
-	GameScene();
+KamataEngine::Sprite* sprite_ = nullptr;
 
-	void Initialize();
+public:
 
-	void Update();
+GameScene();
+~GameScene();
 
-	void Draw();
+void Initialize();
 
+void Update();
 
-};	
+void Draw();
+
+private:
+uint32_t textureHandle_ = 0;
+
+};
