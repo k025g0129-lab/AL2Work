@@ -6,12 +6,16 @@ using namespace KamataEngine;
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
-	
+
+
+	KamataEngine::Initialize(L"LC1B_19_シンモト_キョウスケ_AL2");
+
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
 	GameScene* gameScene = new GameScene();
 
-	KamataEngine::Initialize(L"LC1B_19_シンモト_キョウスケ_AL2");
+	ImGuiManager* imGuiManager = ImGuiManager::GetInstance();
+
 	gameScene->Initialize();
 
 	while (true) {
@@ -20,12 +24,22 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			break;
 		}
 
+	imGuiManager->Begin();
+
 	 gameScene->Update();
+
+	 imGuiManager->End();
+
+
 
 		//ここから描画
 		dxCommon->PreDraw();
 		
 		gameScene->Draw();
+
+		AxisIndicator::GetInstance()->Draw();
+
+		imGuiManager->Draw();
 
 		dxCommon->PostDraw();
 	}
