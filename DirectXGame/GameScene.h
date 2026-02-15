@@ -1,5 +1,6 @@
 #pragma once
 #include "KamataEngine.h"
+#include "Player.h"
 
 class GameScene{
 public:
@@ -24,11 +25,13 @@ uint32_t voiceHandle_ = 0;
 
 
 KamataEngine::Model* model_ = nullptr;
-KamataEngine::WorldTransform worldTransform_;
 
+KamataEngine::WorldTransform worldTransform_;
 KamataEngine::Camera camera_;
 
 KamataEngine::DebugCamera* debugCamera_ = nullptr;
+
+Player* player_ = nullptr;
 
 float inputFloat3[3] = {0.0f, 0.0f, 0.0f};
 

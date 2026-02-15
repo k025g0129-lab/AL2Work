@@ -13,11 +13,12 @@ GameScene::~GameScene() {
 	delete sprite_; 
 	delete model_;
 	delete debugCamera_;
+	delete player_;
 }
 
 void GameScene::Initialize() {
-	textureHandle_ = TextureManager::Load("mario.png");
-	soundDataHandle_ = Audio::GetInstance()->LoadWave("mokugyo.wav");
+	textureHandle_ = TextureManager::Load("matyacap.png");
+	//soundDataHandle_ = Audio::GetInstance()->LoadWave("mokugyo.wav");
 
 	sprite_ = Sprite::Create(textureHandle_, {100, 50});
 	model_ = Model::Create();
@@ -25,14 +26,17 @@ void GameScene::Initialize() {
 	worldTransform_.Initialize();
 	camera_.Initialize();
 
-	Audio::GetInstance()->PlayWave(soundDataHandle_);
-	voiceHandle_ = Audio::GetInstance()->PlayWave(soundDataHandle_, true);
+	//Audio::GetInstance()->PlayWave(soundDataHandle_);
+	//voiceHandle_ = Audio::GetInstance()->PlayWave(soundDataHandle_, true);
 
 	PrimitiveDrawer::GetInstance()->SetCamera(&camera_);
 
 	debugCamera_ = new DebugCamera(1280,720);
 	AxisIndicator::GetInstance()->SetVisible(true);
 	AxisIndicator::GetInstance()->SetTargetCamera(&debugCamera_->GetCamera());
+
+	player_ = new Player();
+	player_->Initialize(model_,textureHandle_,&camera_);
 }
 
 void GameScene::Update() {
@@ -42,6 +46,8 @@ void GameScene::Update() {
 
 	sprite_->SetPosition(pos);
 	debugCamera_->Update();
+
+	player_->Update();
 
 	#ifdef _DEBUG
 
@@ -79,7 +85,7 @@ void GameScene::Draw() {
 	Model::PreDraw();
 
 	model_->Draw(worldTransform_, debugCamera_->GetCamera(), textureHandle_);
-
+	player_->Draw();
 	
 	PrimitiveDrawer::GetInstance()->DrawLine3d({0, 0, 0}, {0, 10, 0}, {1.0f, 0.0f, 0.0f, 1.0f});
 			
