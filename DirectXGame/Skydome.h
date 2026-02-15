@@ -1,17 +1,17 @@
 #pragma once
-#include "KamataEngine.h"
+#include"KamataEngine.h"
 
-class Player {
+class Skydome {
 public:
-	Player();
-	~Player();
-	void Initialize(KamataEngine::Model* model,KamataEngine::Camera * camera);
+
+	void Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera);
 
 	void Update();
 
 	void Draw();
 
 private:
+	
 	KamataEngine::WorldTransform worldTransform_;
 	KamataEngine::Model* model_ = nullptr;
 	KamataEngine::Camera* camera_ = nullptr;

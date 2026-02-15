@@ -16,7 +16,9 @@ GameScene::~GameScene() {
 	delete model_;
 	delete debugCamera_;
 	delete player_;
-	delete block_;
+	delete modelBlock_;
+	delete modelSkydome_;
+	delete skydome_;
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {	
@@ -34,10 +36,12 @@ void GameScene::Initialize() {
 	//soundDataHandle_ = Audio::GetInstance()->LoadWave("mokugyo.wav");
 
 	sprite_ = Sprite::Create(textureHandle_, {100, 50});
-	model_ = Model::Create();
-	block_ = Model::Create();
+	model_ = Model::CreateFromOBJ("player", true);
+	modelBlock_ = Model::CreateFromOBJ("block", true);
+	modelSkydome_ = Model::CreateFromOBJ("skydome",true);
 
 	worldTransform_.Initialize();
+	camera_.farZ = 1500.0f;
 	camera_.Initialize();
 
 	//Audio::GetInstance()->PlayWave(soundDataHandle_);
@@ -50,7 +54,10 @@ void GameScene::Initialize() {
 	AxisIndicator::GetInstance()->SetTargetCamera(&debugCamera_->GetCamera());
 
 	player_ = new Player();
-	player_->Initialize(model_,textureHandle_,&camera_);
+	player_->Initialize(model_, &camera_);
+
+	skydome_ = new Skydome();
+	skydome_->Initialize(modelSkydome_, &camera_);
 
 	const uint32_t kNumBlockVirtical = 10;
 	const uint32_t kNumBlockHorizontal = 20;
@@ -84,6 +91,8 @@ void GameScene::Initialize() {
 		}
 	}
 
+
+
 }
 
 void GameScene::Update() {
@@ -107,6 +116,7 @@ void GameScene::Update() {
 
 
 	player_->Update();
+	skydome_->Update();
 
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
@@ -214,8 +224,9 @@ void GameScene::Draw() {
 	
 	Model::PreDraw();
 
-	model_->Draw(worldTransform_, debugCamera_->GetCamera(), textureHandle_);
+	model_->Draw(worldTransform_, debugCamera_->GetCamera());
 	player_->Draw();
+	skydome_->Draw();
 
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
@@ -225,7 +236,7 @@ void GameScene::Draw() {
 				continue;
 			}
 
-			block_->Draw(*worldTransformBlocks, camera_, textureHandle_);
+			modelBlock_->Draw(*worldTransformBlocks, camera_);
 		}
 	
 	}
