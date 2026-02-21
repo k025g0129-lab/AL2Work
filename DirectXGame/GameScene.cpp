@@ -54,8 +54,10 @@ void GameScene::Initialize() {
 	AxisIndicator::GetInstance()->SetVisible(true);
 	AxisIndicator::GetInstance()->SetTargetCamera(&debugCamera_->GetCamera());
 	
+	KamataEngine::Vector3 playerPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
+
 	player_ = new Player();
-	player_->Initialize(model_, &camera_);
+	player_->Initialize(model_, &camera_,playerPos);
 
 	skydome_ = new Skydome();
 	skydome_->Initialize(modelSkydome_, &camera_);
@@ -130,58 +132,7 @@ void GameScene::Update() {
 				if (!worldTransformBlocks) {
 					continue;
 				}
-
-				Matrix4x4 MatrixInitialize = {};
-				for (int i = 0; i < 4; i++) {
-					for (int j = 0; j < 4; j++) {
-						MatrixInitialize.m[i][j] = 0.0f; 
-					}
-				}
-
-				for (int i = 0; i < 4; i++) {
-					MatrixInitialize.m[i][i] = 1.0f;
-				}
-
-				Matrix4x4 afin = MatrixInitialize;
-		
-				Matrix4x4 S = MatrixInitialize;
-				S.m[0][0] = worldTransformBlocks->scale_.x;
-				S.m[1][1] = worldTransformBlocks->scale_.y;
-				S.m[2][2] = worldTransformBlocks->scale_.z;
-
-				Matrix4x4 T = MatrixInitialize;
-				T.m[3][0] = worldTransformBlocks->translation_.x;
-				T.m[3][1] = worldTransformBlocks->translation_.y;
-				T.m[3][2] = worldTransformBlocks->translation_.z;
-
-				Matrix4x4 Rx = MatrixInitialize;
-				Rx.m[0][0] = 1.0f;
-				Rx.m[1][1] = cosf(worldTransformBlocks->rotation_.x);
-				Rx.m[2][2] = cosf(worldTransformBlocks->rotation_.x);
-				Rx.m[1][2] = sinf(worldTransformBlocks->rotation_.x);
-				Rx.m[2][1] = -sinf(worldTransformBlocks->rotation_.x);
-				Matrix4x4 Ry = MatrixInitialize;
-				Ry.m[1][1] = 1.0f;
-				Ry.m[0][0] = cosf(worldTransformBlocks->rotation_.y);
-				Ry.m[2][2] = cosf(worldTransformBlocks->rotation_.y);
-				Ry.m[2][0] = sinf(worldTransformBlocks->rotation_.y);
-				Ry.m[0][2] = -sinf(worldTransformBlocks->rotation_.y);
-				Matrix4x4 Rz = MatrixInitialize;
-				Rz.m[2][2] = 1.0f;
-				Rz.m[0][0] = cosf(worldTransformBlocks->rotation_.z);
-				Rz.m[1][1] = cosf(worldTransformBlocks->rotation_.z);
-				Rz.m[1][0] = -sinf(worldTransformBlocks->rotation_.z);
-				Rz.m[0][1] = sinf(worldTransformBlocks->rotation_.z);
-
-
-				Matrix4x4 R = MatrixInitialize;
-				R = Multiply(Rx, Multiply(Ry, Rz));
-				afin = Multiply(S, Multiply(R, T));
-
-
-				worldTransformBlocks->matWorld_ = afin;
-			
-				worldTransformBlocks->TransferMatrix();
+			    MakeAffineMatrix(worldTransformBlocks);
 
 		}
 	}
