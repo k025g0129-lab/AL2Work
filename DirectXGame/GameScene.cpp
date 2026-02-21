@@ -19,6 +19,7 @@ GameScene::~GameScene() {
 	delete modelBlock_;
 	delete modelSkydome_;
 	delete skydome_;
+	delete mapChipField_;
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {	
@@ -52,7 +53,7 @@ void GameScene::Initialize() {
 	debugCamera_ = new DebugCamera(1280,720);
 	AxisIndicator::GetInstance()->SetVisible(true);
 	AxisIndicator::GetInstance()->SetTargetCamera(&debugCamera_->GetCamera());
-
+	
 	player_ = new Player();
 	player_->Initialize(model_, &camera_);
 
@@ -61,8 +62,8 @@ void GameScene::Initialize() {
 
 	const uint32_t kNumBlockVirtical = 10;
 	const uint32_t kNumBlockHorizontal = 20;
-	const float kBlockWidth = 2.0f;
-	const float kBlockHeight = 2.0f;
+	//const float kBlockWidth = 2.0f;
+	//const float kBlockHeight = 2.0f;
 
 	worldTransformBlocks_.resize(kNumBlockVirtical);
 
@@ -70,7 +71,7 @@ void GameScene::Initialize() {
 		worldTransformBlocks_[i].resize(kNumBlockHorizontal);
 	}
 
-	for (uint32_t i = 0; i < kNumBlockVirtical; i++) {
+	/* for (uint32_t i = 0; i < kNumBlockVirtical; i++) {
 		for (uint32_t j = 0; j < kNumBlockHorizontal; j++) {
 			if (i % 2 == 0) {
 				worldTransformBlocks_[i][j] = nullptr;
@@ -89,9 +90,13 @@ void GameScene::Initialize() {
 			worldTransformBlocks_[i][j]->translation_.y = kBlockHeight * i;
 
 		}
-	}
+	}*/
 
 
+	mapChipField_ = new MapChipField;
+	mapChipField_->LoadMapChipCsv("Resources/block.csv");
+
+	GenerateBlocks();
 
 }
 
@@ -246,6 +251,36 @@ void GameScene::Draw() {
 
 
 	Model::PostDraw();
+
+
+}
+
+void GameScene::GenerateBlocks() {
+
+	uint32_t numBlockVirtcal = mapChipField_->GetNumBlockVirtical();
+	uint32_t numBlockHorizontal = mapChipField_->GetNumBlockHorizontal();
+
+	worldTransformBlocks_.resize(numBlockVirtcal);
+
+	for (uint32_t i = 0; i < numBlockVirtcal; i++) {
+		worldTransformBlocks_[i].resize(numBlockHorizontal);
+	
+	}
+
+	for (uint32_t y = 0; y < numBlockVirtcal; y++) {
+		for (uint32_t x = 0; x < numBlockHorizontal; x++) {
+			if (mapChipField_->GetMapChipTypeByIndex(x,y) == MapChipType::kBlock) {
+				WorldTransform* worldTransform = new WorldTransform();
+				worldTransform->Initialize();
+				worldTransformBlocks_[y][x] = worldTransform;
+				worldTransformBlocks_[y][x]->translation_ = mapChipField_->GetMapChipPositionByIndex(x,y);
+			
+			
+			}
+
+		}
+	
+	}
 
 
 }
