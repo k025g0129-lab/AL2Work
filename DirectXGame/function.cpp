@@ -93,3 +93,13 @@ KamataEngine::Vector3 Lerp(const KamataEngine::Vector3& a, const KamataEngine::V
 	;
 
 }
+
+KamataEngine::Vector3 Vector3Add(KamataEngine::Vector3 a, KamataEngine::Vector3 b) { 
+	KamataEngine::Vector3 c;
+	c.x = a.x + b.x;
+	c.y = a.y + b.y;
+	c.z = a.z + b.z;
+
+	return c;
+
+}

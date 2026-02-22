@@ -57,9 +57,6 @@ void GameScene::Initialize() {
 	
 	KamataEngine::Vector3 playerPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
 
-	player_ = new Player();
-	player_->Initialize(model_, &camera_,playerPos);
-
 	skydome_ = new Skydome();
 	skydome_->Initialize(modelSkydome_, &camera_);
 
@@ -100,6 +97,12 @@ void GameScene::Initialize() {
 	mapChipField_->LoadMapChipCsv("Resources/block.csv");
 
 	GenerateBlocks();
+
+	
+	player_ = new Player();
+	player_->Initialize(model_, &camera_, playerPos);
+	player_->SetMapChipField(mapChipField_);
+
 
 	cameraController = new CameraController();
 
