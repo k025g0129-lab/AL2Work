@@ -5,6 +5,7 @@
 #include <vector>
 #include "MapChipField.h"
 #include "CameraController.h"
+#include "Enemy.h"
 
 
 class GameScene{
@@ -36,6 +37,7 @@ private:
 	KamataEngine::Model* model_ = nullptr;
 	KamataEngine::Model* modelBlock_ = nullptr;
 	KamataEngine::Model* modelSkydome_ = nullptr;
+	KamataEngine::Model* modelEnemy_ = nullptr;
 
 	KamataEngine::WorldTransform worldTransform_;
 	std::vector < std::vector<KamataEngine::WorldTransform*>> worldTransformBlocks_;
@@ -45,6 +47,7 @@ private:
 	KamataEngine::DebugCamera* debugCamera_ = nullptr;
 
 	Player* player_ = nullptr;
+	Enemy* enemy_ = nullptr;
 	Skydome* skydome_ = nullptr; 
 
 	float inputFloat3[3] = {0.0f, 0.0f, 0.0f};

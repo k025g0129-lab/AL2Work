@@ -16,8 +16,10 @@ GameScene::~GameScene() {
 	delete model_;
 	delete debugCamera_;
 	delete player_;
+	delete enemy_;
 	delete modelBlock_;
 	delete modelSkydome_;
+	delete modelEnemy_;
 	delete skydome_;
 	delete mapChipField_;
 	delete cameraController;
@@ -41,6 +43,7 @@ void GameScene::Initialize() {
 	model_ = Model::CreateFromOBJ("player", true);
 	modelBlock_ = Model::CreateFromOBJ("block", true);
 	modelSkydome_ = Model::CreateFromOBJ("skydome",true);
+	modelEnemy_ = Model::CreateFromOBJ("enemy", true);
 
 	worldTransform_.Initialize();
 	camera_.farZ = 1500.0f;
@@ -55,7 +58,7 @@ void GameScene::Initialize() {
 	AxisIndicator::GetInstance()->SetVisible(true);
 	AxisIndicator::GetInstance()->SetTargetCamera(&debugCamera_->GetCamera());
 	
-	KamataEngine::Vector3 playerPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
+
 
 	skydome_ = new Skydome();
 	skydome_->Initialize(modelSkydome_, &camera_);
@@ -97,11 +100,16 @@ void GameScene::Initialize() {
 	mapChipField_->LoadMapChipCsv("Resources/block.csv");
 
 	GenerateBlocks();
-
+	KamataEngine::Vector3 playerPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
 	
 	player_ = new Player();
 	player_->Initialize(model_, &camera_, playerPos);
 	player_->SetMapChipField(mapChipField_);
+
+	KamataEngine::Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
+
+	enemy_ = new Enemy();
+	enemy_->Initialize(modelEnemy_, &camera_, enemyPos);
 
 
 	cameraController = new CameraController();
@@ -146,6 +154,7 @@ void GameScene::Update() {
 	player_->Update();
 	skydome_->Update();
 	cameraController->Update();
+	enemy_->Update();
 
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
@@ -205,6 +214,7 @@ void GameScene::Draw() {
 	//model_->Draw(worldTransform_, debugCamera_->GetCamera());
 	player_->Draw();
 	skydome_->Draw();
+	enemy_->Draw();
 
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {

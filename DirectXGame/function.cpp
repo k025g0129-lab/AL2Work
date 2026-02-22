@@ -2,6 +2,7 @@
 #ifdef USE_IMGUI
 #include <imgui.h>
 #endif // USE_IMGUI
+#include <numbers>
 
 KamataEngine::Matrix4x4 Multiply(KamataEngine::Matrix4x4 matrix1, KamataEngine::Matrix4x4 matrix2) {
 
@@ -101,5 +102,11 @@ KamataEngine::Vector3 Vector3Add(KamataEngine::Vector3 a, KamataEngine::Vector3 
 	c.z = a.z + b.z;
 
 	return c;
+
+}
+
+float RadToDeg(float radian) {
+
+	return radian * std::numbers::pi_v<float> / 180.0f;
 
 }

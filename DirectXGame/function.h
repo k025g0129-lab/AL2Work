@@ -8,3 +8,4 @@ void MakeAffineMatrix(KamataEngine::WorldTransform* worldTransform);
 float EaseInSine(float self, float target, float t, float maxT);
 KamataEngine::Vector3 Lerp(const KamataEngine::Vector3& a, const KamataEngine::Vector3& b, float t);
 KamataEngine::Vector3 Vector3Add(KamataEngine::Vector3 a, KamataEngine::Vector3 b);
+float RadToDeg(float radian);
