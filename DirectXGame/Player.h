@@ -11,6 +11,10 @@ public:
 
 	void Draw();
 
+
+	const KamataEngine::WorldTransform& GetWorldTransform();
+	const KamataEngine::Vector3& GetVelocity() const { return velocity_; }
+
 private:
 	enum class LRDirection {
 		kRight,
@@ -39,6 +43,7 @@ private:
 	static inline const float kGravityAcceleration = 0.1f;
 	static inline const float kLimitFallSpeed = 1.0f;
 	static inline const float kJumpAcceleration = 0.5f;
-	static inline const float kAttenuation = 1.0f;
+	static inline const float kAttenuation = 1.0f;	
+
 
 };

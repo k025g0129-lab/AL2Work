@@ -20,6 +20,7 @@ GameScene::~GameScene() {
 	delete modelSkydome_;
 	delete skydome_;
 	delete mapChipField_;
+	delete cameraController;
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {	
@@ -95,10 +96,27 @@ void GameScene::Initialize() {
 	}*/
 
 
-	mapChipField_ = new MapChipField;
+	mapChipField_ = new MapChipField();
 	mapChipField_->LoadMapChipCsv("Resources/block.csv");
 
 	GenerateBlocks();
+
+	cameraController = new CameraController();
+
+	CameraController::Rect area;
+	area.left = 0.0f;
+	area.right = float(mapChipField_->GetNumBlockHorizontal());
+	area.bottom = 0.0f;
+	area.top = float(mapChipField_->GetNumBlockVirtical());
+
+
+	cameraController->SetMovebleArea(area);
+
+	
+
+	cameraController->Initialize(&camera_);
+	cameraController->SetTarget(player_);
+	cameraController->Reset();
 
 }
 
@@ -124,6 +142,7 @@ void GameScene::Update() {
 
 	player_->Update();
 	skydome_->Update();
+	cameraController->Update();
 
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
@@ -180,7 +199,7 @@ void GameScene::Draw() {
 	
 	Model::PreDraw();
 
-	model_->Draw(worldTransform_, debugCamera_->GetCamera());
+	//model_->Draw(worldTransform_, debugCamera_->GetCamera());
 	player_->Draw();
 	skydome_->Draw();
 

@@ -144,3 +144,12 @@ void Player::Draw() {
 	model_->Draw(worldTransform_, *camera_);
 	
 }
+
+const KamataEngine::WorldTransform& Player::GetWorldTransform() {
+	return worldTransform_;  
+
+}
+ 
+
+
+
