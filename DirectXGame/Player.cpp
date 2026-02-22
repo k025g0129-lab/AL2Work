@@ -108,15 +108,13 @@ void Player::Update() {
 	//以下は上記を関数化したのもである
 	//========================================================================================	
 	
-	CollisionMaPInfo collisionMaPInfo;
-	collisionMaPInfo.moveAmount = velocity_;
+	
 	//1移動入力
-
-	MovementInput(collisionMaPInfo);
+	MovementInput();
 
 	//2移動量加味して衝突判定
-
-
+	CollisionMaPInfo collisionMaPInfo;
+	collisionMaPInfo.moveAmount = velocity_;
 	MapCollisionDetection(collisionMaPInfo);
 
 	//3判定結果を反映して移動
@@ -125,46 +123,23 @@ void Player::Update() {
 	//4天井接触での処理
 	CeilingContactDetection(collisionMaPInfo);
 
+	//5壁に接触してる処理
+	WallDetection(collisionMaPInfo);
 
+	//6接地状態の切り替え処理
+	GroundStateSwitching(collisionMaPInfo);
 
-	
-	//移動
-	worldTransform_.translation_.x += velocity_.x;
-	worldTransform_.translation_.y += velocity_.y;
-	worldTransform_.translation_.z += velocity_.z;
-	
-	//左右イージング
-	if (turnTimer_ >0.0f) {
-		turnTimer_ -= 1.0f / 60.0f;
-	
-		float destinationRotationYTable[] = {
-			std::numbers::pi_v<float> / 2.0f,
-			std::numbers::pi_v<float> * 3.0f / 2.0f,
+	//7旋回制御
+	TurningControl();
 
-		};
-
-		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
-		worldTransform_.rotation_.y = EaseInSine(turnFirstRotationY_, destinationRotationY, turnTimer_, kTimeTurn) ;
-	}
-
-
-
-	//アセット処理?
+	//8行列計算
 	MakeAffineMatrix(&worldTransform_);
 
 
 
 }
 
-void Player::MovementInput(CollisionMaPInfo& info) {
-
-	info.isLanding = false;
-
-	if (velocity_.y < 0) {
-		if (worldTransform_.translation_.y <= 1.0f) {
-			info.isLanding = true;
-		}
-	}
+void Player::MovementInput() {
 
 	if (onGround_) {
 	
@@ -219,21 +194,21 @@ void Player::MovementInput(CollisionMaPInfo& info) {
 			velocity_.y += kJumpAcceleration;
 		}
 
-		//スピード低下
+		/*//スピード低下
 		if (!KamataEngine::Input::GetInstance()->PushKey(DIK_LEFT) && !KamataEngine::Input::GetInstance()->PushKey(DIK_RIGHT)) {
 			velocity_.x *= (1.0f - kAcceleration);
-		}
+		}*/
 
 	} else {
 		velocity_.y += KamataEngine::Vector3(0, -kGravityAcceleration, 0).y;
 		velocity_.y = std::max(velocity_.y, -kLimitFallSpeed);
 
-		if (info.isLanding) {
+		/* if (info.isLanding) {
 			worldTransform_.translation_.y = 1.0f;
 			velocity_.x *= (1.0f - kAttenuation);
 			velocity_.y = 0.0f;
 			onGround_ = true;
-		}
+		}*/
 
 
 
@@ -253,7 +228,7 @@ void Player::MapCollisionDetection(CollisionMaPInfo& info) {
 }
 
 void Player::JudgmentMovement(const CollisionMaPInfo& info) { 
-	Vector3Add(worldTransform_.translation_, info.moveAmount);
+	worldTransform_.translation_ = Vector3Add(worldTransform_.translation_, info.moveAmount);
 
 }
 
@@ -262,6 +237,82 @@ void Player::CeilingContactDetection(const CollisionMaPInfo& info) {
 		KamataEngine::DebugText::GetInstance()->ConsolePrintf("hit ceiling");
 		velocity_.y = 0;
 	
+	}
+
+}
+
+void Player::WallDetection(const CollisionMaPInfo& info) {
+
+	if (info.isWallContact) {
+		velocity_.x *= (1.0f - kAttenuationWall);
+
+	}
+
+}
+
+void Player::GroundStateSwitching(const CollisionMaPInfo& info) {
+	if (onGround_) {
+		if (velocity_.y >= 0.0f) {
+			onGround_ = false;
+
+		} else {
+			
+			std::array<KamataEngine::Vector3, kNumCorner> posNow;
+
+			for (uint32_t i = 0; i < posNow.size(); i++) {
+				posNow[i] = CornerPosition(worldTransform_.translation_, static_cast<Corner>(i));
+			}
+
+			MapChipType mapChipType;
+
+			bool hit = false;
+
+			MapChipField::IndexSet indexSet;
+			indexSet = mapChipField_->GetMapChipIndexSetByPos(Vector3Add(posNow[kLeftTop], {0, -kAttenuationLanding, 0}));
+			mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+			if (mapChipType == MapChipType::kBlock) {
+				hit = true;
+			}
+
+			indexSet = mapChipField_->GetMapChipIndexSetByPos(Vector3Add(posNow[kRightTop], {0, -kAttenuationLanding, 0}));
+			mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+			if (mapChipType == MapChipType::kBlock) {
+				hit = true;
+			}
+
+			if (!hit) {
+				onGround_ = false;
+			}
+		
+		}
+	
+	} else {
+
+		if (info.isLanding) {
+			onGround_ = true;
+			velocity_.x *= (1.0f - kAttenuationLanding);
+			velocity_.y = 0.0f;
+		}
+	
+	}
+
+
+}
+
+void Player::TurningControl() {
+
+	// 左右イージング
+	if (turnTimer_ > 0.0f) {
+		turnTimer_ -= 1.0f / 60.0f;
+
+		float destinationRotationYTable[] = {
+		    std::numbers::pi_v<float> / 2.0f,
+		    std::numbers::pi_v<float> * 3.0f / 2.0f,
+
+		};
+
+		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
+		worldTransform_.rotation_.y = EaseInSine(turnFirstRotationY_, destinationRotationY, turnTimer_, kTimeTurn);
 	}
 
 }
@@ -280,51 +331,221 @@ void Player::MCDUpDirection(CollisionMaPInfo& info) {
 	
 	}
 
+		// 現在位置
+	std::array<KamataEngine::Vector3, kNumCorner> posNow;
+
+	for (uint32_t i = 0; i < posNow.size(); i++) {
+		posNow[i] = CornerPosition(worldTransform_.translation_, static_cast<Corner>(i));
+	}
+
 	MapChipType mapChipType;
+	MapChipType mapChipTypeNext;
 
 	bool hit = false;
 
 	MapChipField::IndexSet indexSet;
 	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kLeftTop]);
 	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
-	if (mapChipType == MapChipType::kBlock) {
+	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex + 1);
+	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
 		hit = true;
 	}
 
 	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kRightTop]);
 	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
-	if (mapChipType == MapChipType::kBlock) {
+	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex + 1);
+	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
 		hit = true;
 	}
 
 
 	if (hit) {
-	
-		indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kRightTop]);
-		MapChipField::Rect rect = mapChipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
 
-		info.moveAmount.y = std::max(0.0f, (rect.bottom - worldTransform_.translation_.y) - (0.5f + kBlank));
-		info.isCeilingCollision = true;
+		MapChipField::IndexSet indexSetNow;
+		indexSetNow = mapChipField_->GetMapChipIndexSetByPos(posNow[kLeftTop]);
+
+		if (indexSetNow.yIndex != indexSet.yIndex) {
+
+			indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kRightTop]);
+			MapChipField::Rect rect = mapChipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
+
+			info.moveAmount.y = std::max(0.0f, (rect.top - worldTransform_.translation_.y) - (0.5f + kBlank));
+			info.isCeilingCollision = true;
+		}
 	}
 
 }
 
 void Player::MCDDownDirection(CollisionMaPInfo& info) {
 
-	info;
+	if (info.moveAmount.y >= 0.0f) {
+		return;
+	}
 
+	// 移動後角4つの座標計算
+	std::array<KamataEngine::Vector3, kNumCorner> posNew;
+
+	for (uint32_t i = 0; i < posNew.size(); i++) {
+		posNew[i] = CornerPosition(Vector3Add(worldTransform_.translation_, info.moveAmount), static_cast<Corner>(i));
+	}
+
+	// 現在位置
+	std::array<KamataEngine::Vector3, kNumCorner> posNow;
+
+	for (uint32_t i = 0; i < posNow.size(); i++) {
+		posNow[i] = CornerPosition(worldTransform_.translation_, static_cast<Corner>(i));
+	}
+
+	MapChipType mapChipType;
+	MapChipType mapChipTypeNext;
+
+	bool hit = false;
+
+	MapChipField::IndexSet indexSet;
+	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kLeftBottom]);
+
+	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex -1 );
+	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
+		hit = true;
+	}
+
+	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kRightBottom]);
+	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex - 1);
+	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
+		hit = true;
+	}
+
+	
+	if (hit) {
+
+		MapChipField::IndexSet indexSetNow;
+		indexSetNow = mapChipField_->GetMapChipIndexSetByPos(posNow[kLeftBottom]);
+
+		if (indexSetNow.yIndex != indexSet.yIndex) {
+
+			indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kRightBottom]);
+			MapChipField::Rect rect = mapChipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
+
+			info.moveAmount.y = std::min(0.0f, (rect.bottom - worldTransform_.translation_.y) + (0.5f + kBlank));
+			info.isLanding = true;
+
+		}
+	}
 }
 
 void Player::MCDRightDirection(CollisionMaPInfo& info) {
 
-	info;
+	if (info.moveAmount.x <= 0.0f) {
+		return;
+	}
+
+	// 移動後角4つの座標計算
+	std::array<KamataEngine::Vector3, kNumCorner> posNew;
+
+	for (uint32_t i = 0; i < posNew.size(); i++) {
+		posNew[i] = CornerPosition(Vector3Add(worldTransform_.translation_, info.moveAmount), static_cast<Corner>(i));
+	}
+
+		// 現在位置
+	std::array<KamataEngine::Vector3, kNumCorner> posNow;
+
+	for (uint32_t i = 0; i < posNow.size(); i++) {
+		posNow[i] = CornerPosition(worldTransform_.translation_, static_cast<Corner>(i));
+	}
+
+	MapChipType mapChipType;
+	MapChipType mapChipTypeNext;
+
+	bool hit = false;
+
+	MapChipField::IndexSet indexSet;
+	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kRightTop]);
+	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex + 1, indexSet.yIndex );
+	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
+		hit = true;
+	}
+
+	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kRightBottom]);
+	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex + 1, indexSet.yIndex);
+	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
+		hit = true;
+	}
+
+	if (hit) {
+
+		MapChipField::IndexSet indexSetNow;
+		indexSetNow = mapChipField_->GetMapChipIndexSetByPos(posNow[kRightBottom]);
+
+		if (indexSetNow.xIndex != indexSet.xIndex) {
+
+			indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kRightBottom]);
+			MapChipField::Rect rect = mapChipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
+
+			info.moveAmount.x = std::min(0.0f, (rect.left - worldTransform_.translation_.x) - (0.5f + kBlank));
+			info.isWallContact = true;
+		}
+	}
 
 }
 
 void Player::MCDLeftDirection(CollisionMaPInfo& info) {
 
-	info;
+		if (info.moveAmount.x >= 0.0f) {
+		return;
+	}
 
+	// 移動後角4つの座標計算
+	std::array<KamataEngine::Vector3, kNumCorner> posNew;
+
+	for (uint32_t i = 0; i < posNew.size(); i++) {
+		posNew[i] = CornerPosition(Vector3Add(worldTransform_.translation_, info.moveAmount), static_cast<Corner>(i));
+	}
+
+		// 現在位置
+	std::array<KamataEngine::Vector3, kNumCorner> posNow;
+
+	for (uint32_t i = 0; i < posNow.size(); i++) {
+		posNow[i] = CornerPosition(worldTransform_.translation_, static_cast<Corner>(i));
+	}
+
+	MapChipType mapChipType;
+	MapChipType mapChipTypeNext;
+
+	bool hit = false;
+
+	MapChipField::IndexSet indexSet;
+	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kLeftTop]);
+	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex - 1, indexSet.yIndex);
+	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
+		hit = true;
+	}
+
+	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kLeftBottom]);
+	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex - 1, indexSet.yIndex);
+	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
+		hit = true;
+	}
+
+	if (hit) {
+
+		MapChipField::IndexSet indexSetNow;
+		indexSetNow = mapChipField_->GetMapChipIndexSetByPos(posNow[kLeftBottom]);
+
+		if (indexSetNow.xIndex != indexSet.xIndex) {
+
+			indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kLeftBottom]);
+			MapChipField::Rect rect = mapChipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
+
+			info.moveAmount.x = std::max(0.0f, (rect.right - worldTransform_.translation_.x) + (0.5f + kBlank));
+			info.isWallContact = true;
+		}
+	}
 }
 
 

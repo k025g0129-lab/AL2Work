@@ -38,10 +38,14 @@ public:
 	void Draw();
 
 
-	void MovementInput(CollisionMaPInfo& info);
+	void MovementInput();
 	void MapCollisionDetection(CollisionMaPInfo& info);
 	void JudgmentMovement(const CollisionMaPInfo& info);
 	void CeilingContactDetection(const CollisionMaPInfo& info);
+	void WallDetection(const CollisionMaPInfo& info);
+	void GroundStateSwitching(const CollisionMaPInfo& info);
+
+	void TurningControl();
 
 	void MCDUpDirection(CollisionMaPInfo& info);
 	void MCDDownDirection(CollisionMaPInfo& info);
@@ -77,10 +81,12 @@ private:
 
 	//ジャンプ
 	bool onGround_ = true;
-	static inline const float kGravityAcceleration = 0.1f;
-	static inline const float kLimitFallSpeed = 1.0f;
-	static inline const float kJumpAcceleration = 0.5f;
+	static inline const float kGravityAcceleration = 0.05f;
+	static inline const float kLimitFallSpeed = 0.5f;
+	static inline const float kJumpAcceleration = 1.0f;
 	static inline const float kAttenuation = 1.0f;	
+	static inline const float kAttenuationLanding =	0.5f;	
+	static inline const float kAttenuationWall = 0.5f;	
 
 	//当たり判定
 	MapChipField* mapChipField_ = nullptr;
