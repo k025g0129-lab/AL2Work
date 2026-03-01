@@ -214,6 +214,10 @@ void Player::MovementInput() {
 
 	}
 
+	if (velocity_.y > kLimitJumpSpeed) {
+
+		velocity_.y = kLimitJumpSpeed;
+	}
 }
 
 void Player::MapCollisionDetection(CollisionMaPInfo& info) { 

@@ -91,6 +91,7 @@ private:
 	bool onGround_ = true;
 	static inline const float kGravityAcceleration = 0.05f;
 	static inline const float kLimitFallSpeed = 0.5f;
+	static inline const float kLimitJumpSpeed = 1.0f;
 	static inline const float kJumpAcceleration = 1.0f;
 	static inline const float kAttenuation = 1.0f;	
 	static inline const float kAttenuationLanding =	0.5f;	
