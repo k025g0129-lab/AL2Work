@@ -1,5 +1,6 @@
 #include "GameScene.h"
 #include "2d/ImGuiManager.h"
+#include <cassert>
 #include "function.h"
 
 
@@ -16,6 +17,7 @@ GameScene::~GameScene() {
 	delete model_;
 	delete debugCamera_;
 	delete player_;
+	delete deathParticles_;
 	//delete enemy_;
 	delete modelBlock_;
 	delete modelSkydome_;
@@ -50,6 +52,7 @@ void GameScene::Initialize() {
 	modelBlock_ = Model::CreateFromOBJ("block", true);
 	modelSkydome_ = Model::CreateFromOBJ("skydome",true);
 	modelEnemy_ = Model::CreateFromOBJ("enemy", true);
+	modelDeathParticles_ = Model::CreateFromOBJ("deathParticle", true);
 
 	worldTransform_.Initialize();
 	camera_.farZ = 1500.0f;
@@ -111,6 +114,9 @@ void GameScene::Initialize() {
 	player_ = new Player();
 	player_->Initialize(model_, &camera_, playerPos);
 	player_->SetMapChipField(mapChipField_);
+
+	deathParticles_ = new DeathParticles();
+	deathParticles_->Initialize(modelDeathParticles_, &camera_, playerPos);
 
 	//KamataEngine::Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
 	//enemy_ = new Enemy();
@@ -188,6 +194,12 @@ void GameScene::Update() {
 
 	//全ての当たり判定
 	CheckAllCollisions();
+
+
+	//デスパーティクルが存在するなら...???
+	if (deathParticles_) {
+		deathParticles_->Update();
+	}
 	
 
 	#ifdef _DEBUG
@@ -237,7 +249,11 @@ void GameScene::Draw() {
 	}
 	//enemy_->Draw();
 
-
+	// デスパーティクルが存在するなら...???
+	if (deathParticles_) {
+		deathParticles_->Draw();
+	}
+	
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
 
 		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {

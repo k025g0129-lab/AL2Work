@@ -16,4 +16,8 @@ KamataEngine::Vector3 Lerp(const KamataEngine::Vector3& a, const KamataEngine::V
 KamataEngine::Vector3 Vector3Add(KamataEngine::Vector3 a, KamataEngine::Vector3 b);
 float RadToDeg(float radian);
 int IsCollisionAABB2D(const AABB& a, const AABB& b);
+KamataEngine::Matrix4x4 MakeRotateZMatrix(float radian);
 
+
+
+KamataEngine::Vector3 TransformM4x4ToV3(KamataEngine::Vector3 vector, KamataEngine::Matrix4x4 matrix);

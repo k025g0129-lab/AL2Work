@@ -137,3 +137,48 @@ int IsCollisionAABB2D(const AABB& a, const AABB& b) {
 	return true;
 
 }
+
+KamataEngine::Matrix4x4 MakeRotateZMatrix(float radian) { 
+
+	 KamataEngine::Matrix4x4 a{};
+
+	float cosSita = cosf(radian);
+	float sinSita = sinf(radian);
+
+	a.m[0][0] = cosSita;
+	a.m[0][1] = sinSita;
+	a.m[0][2] = 0.0f;
+	a.m[0][3] = 0.0f;
+
+	a.m[1][0] = -sinSita;
+	a.m[1][1] = cosSita;
+	a.m[1][2] = 0.0f;
+	a.m[1][3] = 0.0f;
+
+	a.m[2][0] = 0.0f;
+	a.m[2][1] = 0.0f;
+	a.m[2][2] = 1.0f;
+	a.m[2][3] = 0.0f;
+
+	a.m[3][0] = 0.0f;
+	a.m[3][1] = 0.0f;
+	a.m[3][2] = 0.0f;
+	a.m[3][3] = 1.0f;
+
+	return a;
+
+}
+
+KamataEngine::Vector3 TransformM4x4ToV3(KamataEngine::Vector3 v, KamataEngine::Matrix4x4 m) { 
+	KamataEngine::Vector3 a;
+
+	a.x = v.x * m.m[0][0] + v.y * m.m[1][0] + v.z * m.m[2][0] + m.m[3][0];
+
+	a.y = v.x * m.m[0][1] + v.y * m.m[1][1] + v.z * m.m[2][1] + m.m[3][1];
+
+	a.z = v.x * m.m[0][2] + v.y * m.m[1][2] + v.z * m.m[2][2] + m.m[3][2];
+
+	return a;
+
+
+}
