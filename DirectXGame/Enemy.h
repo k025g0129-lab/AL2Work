@@ -1,5 +1,8 @@
 #pragma once
 #include "KamataEngine.h"
+#include "function.h"
+
+class Player;
 
 class Enemy {
 public:
@@ -10,6 +13,10 @@ public:
 
 	void Draw();
 
+	KamataEngine::Vector3 GetWorldPos();
+	AABB GetAABB();
+
+	void OnCollision(const Player* player);
 
 private:
 	//初期設定
@@ -28,6 +35,11 @@ private:
 	static inline const float kWalkMotionTime = 1.0f;
 
 	float walkTimer_ = 0.0f;
+
+	// 当たり判定
+
+	static inline const float kWidth = 0.8f;
+	static inline const float kHeigth = 0.8f;
 
 
 };

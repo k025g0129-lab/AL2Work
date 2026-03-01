@@ -40,4 +40,34 @@ void Enemy::Update() {
 void Enemy::Draw() {
 
 	model_->Draw(worldTransform_, *camera_);
+
+}
+
+KamataEngine::Vector3 Enemy::GetWorldPos() {
+
+	KamataEngine::Vector3 worldPos;
+	worldPos.x = worldTransform_.matWorld_.m[3][0];
+	worldPos.y = worldTransform_.matWorld_.m[3][1];
+	worldPos.z = worldTransform_.matWorld_.m[3][2];
+
+	return worldPos;
+
+}
+
+AABB Enemy::GetAABB() {
+
+	KamataEngine::Vector3 worldPos = GetWorldPos();
+	AABB aabb;
+	aabb.min = {worldPos.x - kWidth, worldPos.y - kHeigth, worldPos.z - kWidth};
+	aabb.max = {worldPos.x + kWidth, worldPos.y + kHeigth, worldPos.z + kWidth};
+
+	return aabb; 
+
+
+
+}
+
+void Enemy::OnCollision(const Player* player) {
+	(void)player; 
+
 }

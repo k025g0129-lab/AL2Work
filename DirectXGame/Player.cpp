@@ -494,7 +494,7 @@ void Player::MCDRightDirection(CollisionMaPInfo& info) {
 
 void Player::MCDLeftDirection(CollisionMaPInfo& info) {
 
-		if (info.moveAmount.x >= 0.0f) {
+	if (info.moveAmount.x >= 0.0f) {
 		return;
 	}
 
@@ -596,9 +596,37 @@ const KamataEngine::WorldTransform& Player::GetWorldTransform() {
 
 }
 
-void Player::SetMapChipField(MapChipField* mapChipField) { 
-	mapChipField_ = mapChipField;
+KamataEngine::Vector3 Player::GetWorldPos() {
+
+	KamataEngine::Vector3 worldPos;
+	worldPos.x = worldTransform_.matWorld_.m[3][0];
+	worldPos.y = worldTransform_.matWorld_.m[3][1];
+	worldPos.z = worldTransform_.matWorld_.m[3][2];
+
+	return worldPos;
 }
+
+AABB Player::GetAABB() { 
+	KamataEngine::Vector3 worldPos = GetWorldPos();
+	AABB aabb;
+	aabb.min = {worldPos.x - kWidth, worldPos.y - kHeigth, worldPos.z - kWidth};
+	aabb.max = {worldPos.x + kWidth, worldPos.y + kHeigth, worldPos.z + kWidth};
+
+	return aabb;
+}
+
+
+
+void Player::SetMapChipField(MapChipField* mapChipField) { 
+	mapChipField_ = mapChipField; 
+}
+
+void Player::OnCollision(const Enemy* enemy) { 
+	(void)enemy;
+	velocity_.y += kJumpAcceleration;
+}
+
+
  
 
 

@@ -16,13 +16,19 @@ GameScene::~GameScene() {
 	delete model_;
 	delete debugCamera_;
 	delete player_;
-	delete enemy_;
+	//delete enemy_;
 	delete modelBlock_;
 	delete modelSkydome_;
 	delete modelEnemy_;
 	delete skydome_;
 	delete mapChipField_;
 	delete cameraController;
+
+	for (Enemy* enemy : enemies_) {
+		delete enemy;
+	}
+
+	enemies_.clear();
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {	
@@ -106,10 +112,18 @@ void GameScene::Initialize() {
 	player_->Initialize(model_, &camera_, playerPos);
 	player_->SetMapChipField(mapChipField_);
 
-	KamataEngine::Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
+	//KamataEngine::Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
+	//enemy_ = new Enemy();
+	//enemy_->Initialize(modelEnemy_, &camera_, enemyPos);
 
-	enemy_ = new Enemy();
-	enemy_->Initialize(modelEnemy_, &camera_, enemyPos);
+	for (int32_t i = 0; i < kMaxEnemy; i++) {
+		Enemy* newEnemy = new Enemy();
+		Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(5 * i, 5); 
+		newEnemy->Initialize(modelEnemy_, &camera_, enemyPos);
+
+		enemies_.push_back(newEnemy);
+
+	}
 
 
 	cameraController = new CameraController();
@@ -154,8 +168,11 @@ void GameScene::Update() {
 	player_->Update();
 	skydome_->Update();
 	cameraController->Update();
-	enemy_->Update();
-
+	//enemy_->Update();
+	for (Enemy* enemy : enemies_) {
+		enemy->Update();
+	}
+	
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
 	
@@ -169,7 +186,8 @@ void GameScene::Update() {
 	}
 
 
-
+	//全ての当たり判定
+	CheckAllCollisions();
 	
 
 	#ifdef _DEBUG
@@ -214,7 +232,10 @@ void GameScene::Draw() {
 	//model_->Draw(worldTransform_, debugCamera_->GetCamera());
 	player_->Draw();
 	skydome_->Draw();
-	enemy_->Draw();
+	for (Enemy* enemy : enemies_) {
+		enemy->Draw();
+	}
+	//enemy_->Draw();
 
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
@@ -264,6 +285,29 @@ void GameScene::GenerateBlocks() {
 		}
 	
 	}
+
+
+}
+
+void GameScene::CheckAllCollisions() {
+
+	#pragma region 自キャラと敵キャラ当たり判定
+	{
+		AABB aabb1, aabb2;
+		aabb1 = player_->GetAABB();
+		for (Enemy* enemy : enemies_) {
+			aabb2 = enemy->GetAABB();
+
+			if (IsCollisionAABB2D(aabb1,aabb2)) {
+				player_->OnCollision(enemy);
+				enemy->OnCollision(player_);
+			}
+			
+		}
+
+	}
+	#pragma endregion
+
 
 
 }

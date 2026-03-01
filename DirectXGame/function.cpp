@@ -110,3 +110,30 @@ float RadToDeg(float radian) {
 	return radian * std::numbers::pi_v<float> / 180.0f;
 
 }
+
+int IsCollisionAABB2D(const AABB& a, const AABB& b) {
+
+	if (a.max.x < b.min.x) {
+		return false;
+	}
+	if (a.min.x > b.max.x) {
+		return false;
+	}
+
+	if (a.max.y < b.min.y) {
+		return false;
+	}	
+	if (a.min.y > b.max.y) {
+		return false;
+	}
+
+	if (a.max.z < b.min.z) {
+		return false;
+	}
+	if (a.min.z > b.max.z) {
+		return false;
+	}
+
+	return true;
+
+}
