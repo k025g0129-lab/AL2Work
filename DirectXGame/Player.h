@@ -64,6 +64,7 @@ public:
 	const KamataEngine::Vector3& GetVelocity() const { return velocity_; }
 	KamataEngine::Vector3 GetWorldPos() ;
 	AABB GetAABB();
+	bool GetIsDead() const { return isDead_; };
 
 	void SetMapChipField(MapChipField* mapChipField) ;
 	void OnCollision(const Enemy* enemy);
@@ -103,5 +104,8 @@ private:
 	static inline const float kWidth = 0.8f;
 	static inline const float kHeigth = 0.8f;
 	static inline const float kBlank = 0.05f;
+
+	//死亡
+	bool isDead_ = false;
 
 };

@@ -13,6 +13,11 @@ class GameScene{
 public:
 
 	KamataEngine::Sprite* sprite_ = nullptr;
+
+	enum class Phase {
+		kPlay,
+		kDeath,
+	};
 	
 public:
 
@@ -27,10 +32,18 @@ public:
 
 	void GenerateBlocks();
 
-	// 全ての当たり判定
+	//フェーズ関数
+	void PhaseChange();
+
+	void GamePlayPhase();
+	void DeathParticlePhase();
+
+	//フェーズ内部処理関数
+	void CameraUpdate();
+	void BlocksUpdate();
 	void CheckAllCollisions();
 
-
+	bool GetIsFinished() const { return finished_; };
 
 private:
 	uint32_t textureHandle_ = 0;
@@ -68,4 +81,10 @@ private:
 	MapChipField* mapChipField_;	
 
 	CameraController* cameraController;
+
+	Phase phase_= Phase::kPlay;
+
+
+	bool finished_ = false;
+
 };
