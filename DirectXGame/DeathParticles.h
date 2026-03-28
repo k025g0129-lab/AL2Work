@@ -11,6 +11,9 @@ public:
 
 	void Draw();
 
+
+	bool GetIsFinished() const { return isFinished_; };
+
 private:
 	// 初期設定
 	//KamataEngine::WorldTransform worldTransform_;

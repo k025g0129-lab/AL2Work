@@ -7,7 +7,7 @@
 #include "CameraController.h"
 #include "Enemy.h"
 #include "DeathParticles.h"
-
+#include "Fade.h"
 
 class GameScene{
 public:
@@ -15,8 +15,10 @@ public:
 	KamataEngine::Sprite* sprite_ = nullptr;
 
 	enum class Phase {
+		kFadeIn,
 		kPlay,
 		kDeath,
+		kFadeOut,
 	};
 	
 public:
@@ -82,6 +84,7 @@ private:
 
 	CameraController* cameraController;
 
+	Fade* fade_ = nullptr;	
 	Phase phase_= Phase::kPlay;
 
 

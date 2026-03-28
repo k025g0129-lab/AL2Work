@@ -1,7 +1,16 @@
 #pragma once
 #include"KamataEngine.h"
+#include "Fade.h"
 
 class TitleScene {
+public:
+	enum class Phase {
+		kFadeIn,
+		kMain,
+		kFadeOut,
+	};
+
+
 public:
 
 	~TitleScene();
@@ -21,6 +30,10 @@ private:
 	KamataEngine::Camera camera_;
 	uint32_t textureHandle_ = 0u;
 
-
 	bool finished_ = false;
+
+	Fade* fade_ = nullptr;	
+	Phase phase_ = Phase::kFadeIn;
+
+
 };

@@ -25,6 +25,7 @@ GameScene::~GameScene() {
 	delete skydome_;
 	delete mapChipField_;
 	delete cameraController;
+	delete fade_;
 
 	for (Enemy* enemy : enemies_) {
 		delete enemy;
@@ -149,12 +150,16 @@ void GameScene::Initialize() {
 	cameraController->SetTarget(player_);
 	cameraController->Reset();
 
+	fade_ = new Fade();
+	fade_->Initialize();
+	fade_->Start(Fade::Status::FadeIn, 1.0f);
 }
 
 void GameScene::Update() {
 
 	PhaseChange();
-	
+	fade_->Update();
+
 	#ifdef _DEBUG
 
 	//if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
@@ -228,7 +233,7 @@ void GameScene::Draw() {
 
 	Model::PostDraw();
 
-
+	fade_->Draw();
 }
 
 void GameScene::GenerateBlocks() {
@@ -264,6 +269,16 @@ void GameScene::GenerateBlocks() {
 void GameScene::PhaseChange() {
 
 	switch (phase_) {
+	case GameScene::Phase::kFadeIn:
+		GamePlayPhase();
+
+		if (fade_->IsFinished()) {
+			phase_ = Phase::kPlay;
+			fade_->Stop();
+		}
+		
+		break;
+
 	case GameScene::Phase::kPlay:
 		GamePlayPhase();
 
@@ -274,12 +289,25 @@ void GameScene::PhaseChange() {
 		}
 
 		break;
+
 	case GameScene::Phase::kDeath:
 		DeathParticlePhase();
-
-		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-			finished_ = true;
+		if (deathParticles_->GetIsFinished()) {
+			phase_ = Phase::kFadeOut;
+			fade_->Start(Fade::Status::FadeOut, 1.0f);
 		}
+		
+
+		break;
+
+	case GameScene::Phase::kFadeOut:
+
+		if (fade_->IsFinished()) {
+			if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+				finished_ = true;
+			}
+		}
+
 		break;
 	}
 }
