@@ -169,9 +169,11 @@
     <ClCompile Include="Fade.cpp" />
     <ClCompile Include="function.cpp" />
     <ClCompile Include="GameScene.cpp" />
+    <ClCompile Include="HitEffect.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MapChipField.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="random.cpp" />
     <ClCompile Include="Skydome.cpp" />
     <ClCompile Include="TitleScene.cpp" />
   </ItemGroup>
@@ -279,8 +281,10 @@
     <ClInclude Include="Fade.h" />
     <ClInclude Include="function.h" />
     <ClInclude Include="GameScene.h" />
+    <ClInclude Include="HitEffect.h" />
     <ClInclude Include="MapChipField.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="random.h" />
     <ClInclude Include="Skydome.h" />
     <ClInclude Include="TitleScene.h" />
   </ItemGroup>

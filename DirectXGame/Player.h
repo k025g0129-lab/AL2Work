@@ -93,6 +93,8 @@ public:
 		return false;
 	}
 
+	const KamataEngine::Vector3& GetWorldTransform() const { return worldTransform_.translation_; };
+		
 
 
 
@@ -141,7 +143,7 @@ private:
 	uint32_t attackParameter_ = 0;
 	uint32_t attackTime = 15;
 	uint32_t chargeTime = 5; 
-	uint32_t rushTime = 10; 
+	uint32_t rushTime = 5; 
 	uint32_t lingeringTime = 5; 
 
 	KamataEngine::Vector3 attackVelocity = {1.0f,0.0f,0.0f};

@@ -187,6 +187,28 @@ KamataEngine::Matrix4x4 MakeRotateZMatrix(float radian) {
 
 }
 
+std::mt19937_64 randomEngine;
+
+void InitializeRandom() {
+	std::random_device seedGenerator;
+
+	randomEngine.seed(seedGenerator());
+}
+
+float RandomFloat(float min, float max) { 
+
+	std::uniform_real_distribution<float> dist(min, max);
+	return dist(randomEngine);
+}
+
+int RandomInt(int min, int max) {
+
+
+	std::uniform_int_distribution<int> dist(min, max);
+	return dist(randomEngine);
+
+}
+
 KamataEngine::Vector3 TransformM4x4ToV3(KamataEngine::Vector3 v, KamataEngine::Matrix4x4 m) { 
 	KamataEngine::Vector3 a;
 

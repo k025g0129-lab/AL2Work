@@ -22,13 +22,21 @@ GameScene::~GameScene() {
 	delete modelBlock_;
 	delete modelSkydome_;
 	delete modelEnemy_;
+	delete modelEnemyDeathEffect_;
+	delete modelAttack_;
+	delete modelDeathParticles_;
 	delete skydome_;
 	delete mapChipField_;
 	delete cameraController;
 	delete fade_;
 
+
 	for (Enemy* enemy : enemies_) {
 		delete enemy;
+	}
+
+	for (HitEffect* enemyDeathParticles_ : enemyDeathParticless_) {
+		delete enemyDeathParticles_;
 	}
 
 	enemies_.clear();
@@ -55,6 +63,7 @@ void GameScene::Initialize() {
 	modelEnemy_ = Model::CreateFromOBJ("enemy", true);
 	modelDeathParticles_ = Model::CreateFromOBJ("deathParticle", true);
 	modelAttack_ = Model::CreateFromOBJ("hit_effect", true);
+	modelEnemyDeathEffect_ = Model::CreateFromOBJ("particle", true);
 
 	worldTransform_.Initialize();
 	camera_.farZ = 1500.0f;
@@ -128,10 +137,12 @@ void GameScene::Initialize() {
 		Enemy* newEnemy = new Enemy();
 		Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(20 * i, 5); 
 		newEnemy->Initialize(modelEnemy_, &camera_, enemyPos);
-
+		newEnemy->SetGameScene(this);
 		enemies_.push_back(newEnemy);
-
+		
 	}
+
+
 
 
 	cameraController = new CameraController();
@@ -154,6 +165,20 @@ void GameScene::Initialize() {
 	fade_ = new Fade();
 	fade_->Initialize();
 	fade_->Start(Fade::Status::FadeIn, 1.0f);
+
+
+	for (int32_t i = 0; i < kMaxEnemy; i++) {
+		HitEffect* newEnemyDeathParticles = new HitEffect();
+		Vector3 enemyDeathParticlesPos = mapChipField_->GetMapChipPositionByIndex(20 * i, 5);
+		newEnemyDeathParticles->Initialize(enemyDeathParticlesPos);
+		newEnemyDeathParticles->SetCamera(&camera_);
+		newEnemyDeathParticles->SetModel(modelEnemyDeathEffect_);
+		
+		enemyDeathParticless_.push_back(newEnemyDeathParticles);
+	}
+
+	InitializeRandom();
+
 }
 
 void GameScene::Update() {
@@ -216,6 +241,12 @@ void GameScene::Draw() {
 	skydome_->Draw();
 	for (Enemy* enemy : enemies_) {
 		enemy->Draw();
+	}
+
+		
+	for (HitEffect* enemyDeathParticles : enemyDeathParticless_) {
+		
+		enemyDeathParticles->Draw();
 	}
 	//enemy_->Draw();
 
@@ -332,6 +363,9 @@ void GameScene::GamePlayPhase() {
 	for (Enemy* enemy : enemies_) {
 		enemy->Update();
 	}
+	for (HitEffect* enemyDeathParticles : enemyDeathParticless_) {
+		enemyDeathParticles->Update();
+	}
 
 	// カメラコントロールの更新
 	cameraController->Update();
@@ -411,6 +445,7 @@ void GameScene::CheckAllCollisions() {
 			if (IsCollisionAABB2D(aabb1,aabb2)) {
 				player_->OnCollision(enemy);
 				enemy->OnCollision(player_);
+
 			}
 			
 		}
@@ -419,6 +454,13 @@ void GameScene::CheckAllCollisions() {
 	#pragma endregion
 
 
+
+}
+
+void GameScene::CreateHitEffect(KamataEngine::Vector3 pos) { 
+	HitEffect* newEnemyDeathParticles = HitEffect::Create(pos);
+	newEnemyDeathParticles->SetIsDead();
+	enemyDeathParticless_.push_back(newEnemyDeathParticles);
 
 }
 

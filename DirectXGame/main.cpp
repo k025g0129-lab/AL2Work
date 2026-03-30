@@ -7,7 +7,7 @@
 
 using namespace KamataEngine;
 TitleScene* titleScene = nullptr;
-GameScene* gameScene = nullptr;
+GameScene* gameScene_ = nullptr;
 
 enum class Scene {
 	kUnknown = 0,
@@ -25,7 +25,7 @@ void UpdateScene() {
 
 		break;
 	case Scene::kGame:
-		gameScene->Update();
+		gameScene_->Update();
 		break;
 
 	}
@@ -40,7 +40,7 @@ void DrawScene() {
 
 		break;
 	case Scene::kGame:
-		gameScene->Draw();
+		gameScene_->Draw();
 		break;
 	}
 
@@ -54,15 +54,15 @@ void ChangeScene() {
 			delete titleScene;
 			titleScene = nullptr;
 
-			gameScene = new GameScene;
-			gameScene->Initialize();
+			gameScene_ = new GameScene;
+			gameScene_->Initialize();
 		}
 		break;
 	case Scene::kGame:
-		if (gameScene->GetIsFinished()) {
+		if (gameScene_->GetIsFinished()) {
 			scene = Scene::kTitle;
-			delete gameScene;
-			gameScene = nullptr;
+			delete gameScene_;
+			gameScene_ = nullptr;
 
 			titleScene = new TitleScene;
 			titleScene->Initialize();
@@ -82,12 +82,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 	ImGuiManager* imGuiManager = ImGuiManager::GetInstance();
 
-	gameScene = new GameScene();
+	gameScene_ = new GameScene();
 	titleScene = new TitleScene();
 
 
 	titleScene->Initialize();
-	gameScene->Initialize();
+	gameScene_->Initialize();
 
 
 	while (true) {
@@ -118,10 +118,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	}
 
 	delete titleScene;
-	delete gameScene;
+	delete gameScene_;
 
 	titleScene = nullptr;
-	gameScene = nullptr;
+	gameScene_ = nullptr;
 
 	KamataEngine::Finalize();
 

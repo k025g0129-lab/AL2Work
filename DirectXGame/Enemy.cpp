@@ -6,6 +6,8 @@
 #include <algorithm> 
 #include "function.h"
 #include "Player.h"
+#include "GameScene.h"
+
 
 void Enemy::Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera, const KamataEngine::Vector3 pos) {
 	assert(model);
@@ -30,11 +32,11 @@ void Enemy::Update() {
 		switch (behavior_) {
 		case Enemy::Behavior::kMove:
 			BehaviorMoveInitialize();
-		    worldTransform_.rotation_.y = (std::numbers::pi_v<float> / 2.0f) * 3.0f;
+		    //worldTransform_.rotation_.y = (std::numbers::pi_v<float> / 2.0f) * 3.0f;
 			break;
 		case Enemy::Behavior::kDeath:
 			BehaviorDeathInitialize();
-		    deathParameter_ = 0;
+		    //deathParameter_ = 0;
 			break;
 
 		}
@@ -120,6 +122,14 @@ void Enemy::OnCollision(const Player* player) {
 		isCollisionDisabled_ = true;
 		behaviorRequest_ = Behavior::kDeath;
    }
+
+   KamataEngine::Vector3 effectPos = (Vector3Add(worldTransform_.translation_, player->GetWorldTransform()));
+   effectPos.x /= 2.0f;
+   effectPos.y /= 2.0f;
+   effectPos.z /= 2.0f;
+
+   gameScene_->CreateHitEffect(effectPos);
+
 }
 
 void Enemy::BehaviorMoveInitialize() {

@@ -1,7 +1,7 @@
 #pragma once
 #include "KamataEngine.h"
-
 #include <vector>
+#include <random>
 
 struct AABB {
 	KamataEngine::Vector3 min;
@@ -19,6 +19,10 @@ KamataEngine::Vector3 Vector3Sub(KamataEngine::Vector3 a, KamataEngine::Vector3 
 float RadToDeg(float radian);
 int IsCollisionAABB2D(const AABB& a, const AABB& b);
 KamataEngine::Matrix4x4 MakeRotateZMatrix(float radian);
+void InitializeRandom();
+float RandomFloat(float min, float max);
+int RandomInt(int min, int max);
+
 
 
 

@@ -3,6 +3,7 @@
 #include "function.h"
 
 class Player;
+class GameScene;
 
 class Enemy {
 public:
@@ -31,6 +32,7 @@ public:
 
 	bool GetIsDead() const { return isDead_; };
 	bool GetIsCollisionDisabled() const { return isCollisionDisabled_; };
+	void SetGameScene(GameScene* gameScene) { gameScene_ = gameScene; };
 
 private:
 	//初期設定
@@ -65,5 +67,7 @@ private:
 	uint32_t deathTime = 60;
 
 	bool isCollisionDisabled_ = false;
+
+	GameScene * gameScene_ = nullptr;
 
 };

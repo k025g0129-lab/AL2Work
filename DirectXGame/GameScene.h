@@ -8,6 +8,7 @@
 #include "Enemy.h"
 #include "DeathParticles.h"
 #include "Fade.h"
+#include "HitEffect.h"
 
 class GameScene{
 public:
@@ -45,6 +46,8 @@ public:
 	void BlocksUpdate();
 	void CheckAllCollisions();
 
+	void CreateHitEffect(KamataEngine::Vector3 pos);
+
 	bool GetIsFinished() const { return finished_; };
 
 private:
@@ -59,6 +62,8 @@ private:
 	KamataEngine::Model* modelEnemy_	 = nullptr;
 	KamataEngine::Model* modelDeathParticles_ = nullptr;
 	KamataEngine::Model* modelAttack_ = nullptr;
+	KamataEngine::Model* modelEnemyDeathEffect_ = nullptr;
+
 
 	KamataEngine::WorldTransform worldTransform_;
 	std::vector < std::vector<KamataEngine::WorldTransform*>> worldTransformBlocks_;
@@ -91,4 +96,7 @@ private:
 
 	bool finished_ = false;
 
+
+	//HitEffect* enemyDeathParticles_ = nullptr;
+	std::list<HitEffect*> enemyDeathParticless_;
 };
