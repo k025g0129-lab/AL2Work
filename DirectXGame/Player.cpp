@@ -15,16 +15,25 @@ Player::~Player() {
 
 }
 
-void Player::Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera,const KamataEngine::Vector3 pos) { 
+void Player::Initialize(KamataEngine::Model* model, KamataEngine::Model* modelAttack, KamataEngine::Camera* camera, const KamataEngine::Vector3 pos) { 
 
 	assert(model);
 	model_ = model;		
 	camera_ = camera;
 
+	assert(modelAttack);
+	modelAttack_ = modelAttack;
+
 	worldTransform_.Initialize();
 	worldTransform_.translation_ = pos;
 		
 	worldTransform_.rotation_.y = std::numbers::pi_v<float> / 2.0f;
+
+	worldTransformAttack_.Initialize();
+	worldTransformAttack_.translation_ = pos;
+
+	worldTransformAttack_.rotation_.y = std::numbers::pi_v<float> / 2.0f;
+
 
 }
 
@@ -107,8 +116,8 @@ void Player::Update() {
 	//========================================================================================
 	//以下は上記を関数化したのもである
 	//========================================================================================	
-	
-	
+	//攻撃ギミック作成の為以下を一時的にコメント化
+	/*
 	//1移動入力
 	MovementInput();
 
@@ -134,9 +143,39 @@ void Player::Update() {
 
 	//8行列計算
 	MakeAffineMatrix(&worldTransform_);
+*/
+		
+	if (behaviorRequest_ != Behavior::kUnknown) {
+		behavior_ = behaviorRequest_;
+		switch (behavior_) {
+		case Player::Behavior::kRoot:
+			BehaviorRootInitialize();
+			break;
+		case Player::Behavior::kAttact:
+			BehaviorAttackInitialize();
+			break;
+
+		}
+		behaviorRequest_ = Behavior::kUnknown;
+	
+	}
+	
+	switch (behavior_) {
+	case Player::Behavior::kRoot:
+
+		BehaviorRootUpdate();
+		break;
 
 
+	case Player::Behavior::kAttact:
 
+		BehaviorAttackUpdate();
+		break;
+
+	}
+
+	//
+	//
 }
 
 void Player::MovementInput() {
@@ -161,7 +200,7 @@ void Player::MovementInput() {
 			if (lrDirection_ != LRDirection::kRight) {
 				lrDirection_ = LRDirection::kRight;
 				turnFirstRotationY_ = worldTransform_.rotation_.y;
-				turnTimer_ = kTimeTurn;
+				turnTimer_ = 0.0f;
 			}
 
 		}
@@ -178,7 +217,7 @@ void Player::MovementInput() {
 			if (lrDirection_ != LRDirection::kLeft) {
 				lrDirection_ = LRDirection::kLeft;
 				turnFirstRotationY_ = worldTransform_.rotation_.y;
-				turnTimer_ = kTimeTurn;
+				turnTimer_ =0.0f;
 			}
 		}
 
@@ -306,8 +345,8 @@ void Player::GroundStateSwitching(const CollisionMaPInfo& info) {
 void Player::TurningControl() {
 
 	// 左右イージング
-	if (turnTimer_ > 0.0f) {
-		turnTimer_ -= 1.0f / 60.0f;
+	if (turnTimer_ < kTimeTurn) {
+		turnTimer_ += 1.0f / 60.0f;
 
 		float destinationRotationYTable[] = {
 		    std::numbers::pi_v<float> / 2.0f,
@@ -552,11 +591,161 @@ void Player::MCDLeftDirection(CollisionMaPInfo& info) {
 	}
 }
 
+void Player::BehaviorRootInitialize() {}
+
+void Player::BehaviorAttackInitialize() { 
+	attackParameter_ = 0;
+
+}
+
+void Player::BehaviorRootUpdate() {
+
+	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_Z)) {
+		behaviorRequest_ = Behavior::kAttact;
+	}
+
+
+	// 1移動入力
+	MovementInput();
+
+	// 2移動量加味して衝突判定
+	CollisionMaPInfo collisionMaPInfo;
+	collisionMaPInfo.moveAmount = velocity_;
+	MapCollisionDetection(collisionMaPInfo);
+
+	// 3判定結果を反映して移動
+	JudgmentMovement(collisionMaPInfo);
+
+	// 4天井接触での処理
+	CeilingContactDetection(collisionMaPInfo);
+
+	// 5壁に接触してる処理
+	WallDetection(collisionMaPInfo);
+
+	// 6接地状態の切り替え処理
+	GroundStateSwitching(collisionMaPInfo);
+
+	// 7旋回制御
+	TurningControl();
+
+	// 8行列計算
+	MakeAffineMatrix(&worldTransform_);
+
+
+
+
+}
+
+void Player::BehaviorAttackUpdate() {
+	attackParameter_++;
+
+
+	/* if (attackParameter_ >= attackTime) {
+		behaviorRequest_ = Behavior::kRoot;
+	}
+	velocity_.x = 1.0f;*/
+
+	//KamataEngine::Vector3 velocity{};
+
+
+	switch (attackPhase_) {
+	case Player::AttackPhase::kCharge:
+		//float t = static_cast<float>(attackParameter_) / chargeTime;
+		worldTransform_.scale_.z = EaseOutSine(1.0f, 0.3f, static_cast<float>(attackParameter_), static_cast<float>(chargeTime));
+		worldTransform_.scale_.y = EaseOutSine(1.0f, 1.6f, static_cast<float>(attackParameter_), static_cast<float>(chargeTime));
+		if (attackParameter_ >= chargeTime) {
+			attackPhase_ = AttackPhase::kRush;
+			attackParameter_ = 0;
+		}
+
+		break;
+	case Player::AttackPhase::kRush:
+
+		worldTransform_.scale_.z = EaseOutSine(0.1f, 1.3f, static_cast<float>(attackParameter_), static_cast<float>(rushTime));
+		worldTransform_.scale_.y = EaseInSine(1.6f, 0.7f, static_cast<float>(attackParameter_), static_cast<float>(rushTime));
+
+		if (attackParameter_ >= rushTime) {
+			attackPhase_ = AttackPhase::kLingering;
+			attackParameter_ = 0;
+		}
+
+		if (lrDirection_ == LRDirection::kRight) {
+			//Vector3Add(velocity_, attackVelocity);
+			velocity_.x = 0.8f;
+
+		} else {
+			//Vector3Sub(velocity_, attackVelocity);
+			velocity_.x = -0.8f;
+		}
+
+		break;
+	case Player::AttackPhase::kLingering:
+
+		worldTransform_.scale_.z = EaseOutSine(1.3f, 1.0f, static_cast<float>(attackParameter_), static_cast<float>(lingeringTime));
+		worldTransform_.scale_.y = EaseOutSine(0.7f, 1.0f, static_cast<float>(attackParameter_), static_cast<float>(lingeringTime));
+
+		if (attackParameter_ >= lingeringTime) {
+			worldTransform_.scale_.z = 1.0f;
+			worldTransform_.scale_.y = 1.0f;
+
+			attackPhase_ = AttackPhase::kCharge;
+			attackParameter_ = 0;
+			behaviorRequest_ = Behavior::kRoot;
+		}
+		
+		break;
+	default:
+		break;
+	}
+
+
+	// 1移動入力
+	MovementInput();
+
+	// 2移動量加味して衝突判定
+	CollisionMaPInfo collisionMaPInfo;
+	collisionMaPInfo.moveAmount = velocity_;
+	//collisionMaPInfo.moveAmount = velocity_;
+	MapCollisionDetection(collisionMaPInfo);
+
+	// 3判定結果を反映して移動
+	JudgmentMovement(collisionMaPInfo);
+
+	// 4天井接触での処理
+	CeilingContactDetection(collisionMaPInfo);
+
+	// 5壁に接触してる処理
+	WallDetection(collisionMaPInfo);
+
+	// 6接地状態の切り替え処理
+	GroundStateSwitching(collisionMaPInfo);
+
+	// 7旋回制御
+	TurningControl();
+
+	// 8行列計算
+	MakeAffineMatrix(&worldTransform_);
+
+
+	//9攻撃エフェクト行列計算
+	worldTransformAttack_.translation_ = worldTransform_.translation_;
+	worldTransformAttack_.rotation_ = worldTransform_.rotation_;
+	MakeAffineMatrix(&worldTransformAttack_);
+
+
+}
+
 
 void Player::Draw() {
 
 	model_->Draw(worldTransform_, *camera_);
 	
+	if (attackPhase_ == AttackPhase::kRush) {
+		modelAttack_->Draw(worldTransformAttack_, *camera_);
+		//modelAttack_->Draw(worldTransformAttack_, *camera_);
+	}
+
+
 }
 
 KamataEngine::Vector3 Player::CornerPosition(const KamataEngine::Vector3& center, Corner corner) { 

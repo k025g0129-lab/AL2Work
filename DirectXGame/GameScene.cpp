@@ -54,6 +54,7 @@ void GameScene::Initialize() {
 	modelSkydome_ = Model::CreateFromOBJ("skydome",true);
 	modelEnemy_ = Model::CreateFromOBJ("enemy", true);
 	modelDeathParticles_ = Model::CreateFromOBJ("deathParticle", true);
+	modelAttack_ = Model::CreateFromOBJ("hit_effect", true);
 
 	worldTransform_.Initialize();
 	camera_.farZ = 1500.0f;
@@ -113,7 +114,7 @@ void GameScene::Initialize() {
 	KamataEngine::Vector3 playerPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
 	
 	player_ = new Player();
-	player_->Initialize(model_, &camera_, playerPos);
+	player_->Initialize(model_, modelAttack_, &camera_, playerPos);
 	player_->SetMapChipField(mapChipField_);
 
 	deathParticles_ = new DeathParticles();

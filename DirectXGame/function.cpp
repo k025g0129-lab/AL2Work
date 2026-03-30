@@ -74,13 +74,22 @@ void MakeAffineMatrix(KamataEngine::WorldTransform* worldTransform) {
 }
 
 float EaseInSine(float self, float target, float t, float maxT) { 
-	float tt = 1.0f - (t / maxT);
+	float tt = t / maxT;
 
 	float ease = 1.0f - cosf((tt * 3.14f) / 2.0f);
 
 	//return self + (target - self) * ease;
 	return self * (1.0f - ease) + target * ease;
 
+}
+
+float EaseOutSine(float self, float target, float t, float maxT) {
+	float tt = t / maxT;
+
+	float ease = sinf((tt * 3.14f) / 2.0f);
+
+	// return self + (target - self) * ease;
+	return self * (1.0f - ease) + target * ease;
 
 }
 
@@ -103,6 +112,15 @@ KamataEngine::Vector3 Vector3Add(KamataEngine::Vector3 a, KamataEngine::Vector3 
 
 	return c;
 
+}
+
+KamataEngine::Vector3 Vector3Sub(KamataEngine::Vector3 a, KamataEngine::Vector3 b) { 
+	KamataEngine::Vector3 c;
+	c.x = a.x - b.x;
+	c.y = a.y - b.y;
+	c.z = a.z - b.z;
+
+	return c;
 }
 
 float RadToDeg(float radian) {

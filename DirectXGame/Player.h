@@ -31,10 +31,23 @@ private:
 		kNumCorner
 	};
 
+
+	enum class Behavior {
+		kRoot,
+		kAttact,
+		kUnknown,
+	};
+
+	enum class AttackPhase { 
+		kCharge,
+		kRush,
+		kLingering,
+	};
+
 public:
 	Player();
 	~Player();
-	void Initialize(KamataEngine::Model* model,KamataEngine::Camera * camera,const KamataEngine::Vector3 pos);
+	void Initialize(KamataEngine::Model* model, KamataEngine::Model* modelAttack, KamataEngine::Camera* camera, const KamataEngine::Vector3 pos);
 
 	void Update();
 
@@ -56,7 +69,10 @@ public:
 	void MCDLeftDirection(CollisionMaPInfo& info);
 
 
-
+	void BehaviorRootInitialize();
+	void BehaviorAttackInitialize();
+	void BehaviorRootUpdate();
+	void BehaviorAttackUpdate();
 	
 	KamataEngine::Vector3 CornerPosition(const KamataEngine::Vector3& center, Corner corner);
 
@@ -107,5 +123,24 @@ private:
 
 	//死亡
 	bool isDead_ = false;
+
+	//攻撃
+	Behavior behavior_ = Behavior::kRoot;
+	Behavior behaviorRequest_ = Behavior::kUnknown;
+	AttackPhase attackPhase_ = AttackPhase::kCharge;
+
+	uint32_t attackParameter_ = 0;
+	uint32_t attackTime = 15;
+	uint32_t chargeTime = 60; 
+	uint32_t rushTime = 60; 
+	uint32_t lingeringTime = 60; 
+
+	KamataEngine::Vector3 attackVelocity = {1.0f,0.0f,0.0f};
+
+	//攻撃エフェクト
+	KamataEngine::Model* modelAttack_ = nullptr;
+	KamataEngine::WorldTransform worldTransformAttack_;
+
+
 
 };

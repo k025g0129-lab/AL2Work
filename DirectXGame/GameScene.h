@@ -58,6 +58,7 @@ private:
 	KamataEngine::Model* modelSkydome_ = nullptr;
 	KamataEngine::Model* modelEnemy_	 = nullptr;
 	KamataEngine::Model* modelDeathParticles_ = nullptr;
+	KamataEngine::Model* modelAttack_ = nullptr;
 
 	KamataEngine::WorldTransform worldTransform_;
 	std::vector < std::vector<KamataEngine::WorldTransform*>> worldTransformBlocks_;
