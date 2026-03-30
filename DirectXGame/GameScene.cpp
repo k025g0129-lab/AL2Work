@@ -158,6 +158,14 @@ void GameScene::Initialize() {
 
 void GameScene::Update() {
 
+	enemies_.remove_if([](Enemy* enemy) {
+		if (enemy->GetIsDead()) {
+			delete enemy;
+			return true;
+		}
+		return false;
+	});
+
 	PhaseChange();
 	fade_->Update();
 
@@ -393,6 +401,11 @@ void GameScene::CheckAllCollisions() {
 		AABB aabb1, aabb2;
 		aabb1 = player_->GetAABB();
 		for (Enemy* enemy : enemies_) {
+
+			if (enemy->GetIsCollisionDisabled()) {
+				continue;
+			}
+
 			aabb2 = enemy->GetAABB();
 
 			if (IsCollisionAABB2D(aabb1,aabb2)) {

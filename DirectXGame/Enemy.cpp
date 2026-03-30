@@ -5,6 +5,7 @@
 #include <cassert> 
 #include <algorithm> 
 #include "function.h"
+#include "Player.h"
 
 void Enemy::Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera, const KamataEngine::Vector3 pos) {
 	assert(model);
@@ -24,14 +25,53 @@ void Enemy::Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera,
 
 void Enemy::Update() {
 
-	walkTimer_ += 1.0f / 60.0f;
-	float param = std::sin((std::numbers::pi_v<float> * 2.0f) * walkTimer_ / kWalkMotionTime);
-	float degree = kWalkMotionAngleStart + kWalkMotionAngleEnd * (param + 1.0f) / 2.0f;
-	worldTransform_.rotation_.x = RadToDeg(degree);
+	if (behaviorRequest_ != Behavior::kUnknown) {
+		behavior_ = behaviorRequest_;
+		switch (behavior_) {
+		case Enemy::Behavior::kMove:
+			BehaviorMoveInitialize();
+		    worldTransform_.rotation_.y = (std::numbers::pi_v<float> / 2.0f) * 3.0f;
+			break;
+		case Enemy::Behavior::kDeath:
+			BehaviorDeathInitialize();
+		    deathParameter_ = 0;
+			break;
+
+		}
+		behaviorRequest_ = Behavior::kUnknown;
+	}
+
+	float param;
+	float degree;
+	switch (behavior_) {
+	case Enemy::Behavior::kMove:
+
+		walkTimer_ += 1.0f / 60.0f;
+		param = std::sin((std::numbers::pi_v<float> * 2.0f) * walkTimer_ / kWalkMotionTime);
+		degree = kWalkMotionAngleStart + kWalkMotionAngleEnd * (param + 1.0f) / 2.0f;
+		worldTransform_.rotation_.x = RadToDeg(degree);
+
+		// Vector3Add(worldTransform_.translation_,velocity_);
+		worldTransform_.translation_.x += velocity_.x;
+		break;
 
 
-	//Vector3Add(worldTransform_.translation_,velocity_);
-	worldTransform_.translation_.x += velocity_.x;
+	case Enemy::Behavior::kDeath:
+
+		deathParameter_++;
+		worldTransform_.rotation_.x += 1.0f;
+		worldTransform_.rotation_.y += 1.0f;
+		worldTransform_.rotation_.z += 1.0f;
+		if (deathParameter_ >= deathTime) {
+			
+			isDead_ = true;
+		}
+
+		break;
+
+
+
+	}
 
 	MakeAffineMatrix(&worldTransform_);
 
@@ -67,7 +107,28 @@ AABB Enemy::GetAABB() {
 
 }
 
-void Enemy::OnCollision(const Player* player) {
-	(void)player; 
 
+
+void Enemy::OnCollision(const Player* player) {
+   //(void)player; 
+
+	if (behavior_ == Behavior::kDeath) {
+	   return;
+	}
+
+   if (player->isAttack()) {
+		isCollisionDisabled_ = true;
+		behaviorRequest_ = Behavior::kDeath;
+   }
+}
+
+void Enemy::BehaviorMoveInitialize() {
+	worldTransform_.rotation_.x = 0.0f;
+	worldTransform_.rotation_.y = (std::numbers::pi_v<float> / 2.0f) * 3.0f;
+	worldTransform_.rotation_.z = 0.0f;
+
+}
+
+void Enemy::BehaviorDeathInitialize() { 
+	deathParameter_ = 0; 
 }

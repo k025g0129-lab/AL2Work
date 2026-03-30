@@ -7,6 +7,14 @@ class Player;
 class Enemy {
 public:
 
+	enum class Behavior {
+		kMove,
+		kDeath,
+		kUnknown,
+	};
+
+public:
+
 	void Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera, const KamataEngine::Vector3 pos);
 
 	void Update();
@@ -17,6 +25,12 @@ public:
 	AABB GetAABB();
 
 	void OnCollision(const Player* player);
+
+	void BehaviorMoveInitialize();
+	void BehaviorDeathInitialize();
+
+	bool GetIsDead() const { return isDead_; };
+	bool GetIsCollisionDisabled() const { return isCollisionDisabled_; };
 
 private:
 	//初期設定
@@ -41,5 +55,15 @@ private:
 	static inline const float kWidth = 0.8f;
 	static inline const float kHeigth = 0.8f;
 
+	//死亡
+	bool isDead_ = false;
+
+	//死亡演出
+	Behavior behavior_ = Behavior::kMove;
+	Behavior behaviorRequest_ = Behavior::kMove;
+	uint32_t deathParameter_ = 0;
+	uint32_t deathTime = 60;
+
+	bool isCollisionDisabled_ = false;
 
 };

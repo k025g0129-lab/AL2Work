@@ -84,6 +84,15 @@ public:
 
 	void SetMapChipField(MapChipField* mapChipField) ;
 	void OnCollision(const Enemy* enemy);
+	
+	bool isAttack() const {
+		if (behavior_ == Behavior::kAttact) {
+			return true;
+		}
+
+		return false;
+	}
+
 
 
 
@@ -131,9 +140,9 @@ private:
 
 	uint32_t attackParameter_ = 0;
 	uint32_t attackTime = 15;
-	uint32_t chargeTime = 60; 
-	uint32_t rushTime = 60; 
-	uint32_t lingeringTime = 60; 
+	uint32_t chargeTime = 5; 
+	uint32_t rushTime = 10; 
+	uint32_t lingeringTime = 5; 
 
 	KamataEngine::Vector3 attackVelocity = {1.0f,0.0f,0.0f};
 

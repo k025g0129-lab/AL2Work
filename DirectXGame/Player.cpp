@@ -700,7 +700,7 @@ void Player::BehaviorAttackUpdate() {
 
 
 	// 1移動入力
-	MovementInput();
+	//MovementInput();
 
 	// 2移動量加味して衝突判定
 	CollisionMaPInfo collisionMaPInfo;
@@ -814,13 +814,12 @@ void Player::SetMapChipField(MapChipField* mapChipField) {
 	mapChipField_ = mapChipField; 
 }
 
-void Player::OnCollision(const Enemy* enemy) { 
+void Player::OnCollision(const Enemy* enemy) {
+	if (isAttack()) {
+		return;
+	}
+
 	(void)enemy;
 	isDead_ = true;
 }
-
-
- 
-
-
 
