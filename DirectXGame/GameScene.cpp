@@ -25,7 +25,6 @@ void GameScene::Initialize() {
 	worldTransform_.Initialize();
 	camera_.Initialize();
 
-	Audio::GetInstance()->PlayWave(soundDataHandle_);
 	voiceHandle_ = Audio::GetInstance()->PlayWave(soundDataHandle_, true);
 
 	PrimitiveDrawer::GetInstance()->SetCamera(&camera_);
