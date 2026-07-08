@@ -191,6 +191,7 @@ void GameScene::Update() {
 		return false;
 	});
 
+
 	PhaseChange();
 	fade_->Update();
 
