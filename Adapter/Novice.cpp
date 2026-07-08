@@ -6,10 +6,7 @@
 #include <iterator>
 #include <span>
 
-#include <d3dcompiler.h>
 #include <d3dx12.h>
-
-#pragma comment(lib, "d3dcompiler.lib")
 
 using namespace KamataEngine;
 
@@ -63,7 +60,7 @@ Sprite::BlendMode ToSpriteBlendMode(BlendMode blendMode) {
 		result = Sprite::BlendMode::kSubtract;
 		break;
 	case kBlendModeMultily:
-		result = Sprite::BlendMode::kMultily;
+		result = Sprite::BlendMode::kMultiply;
 		break;
 	case kBlendModeScreen:
 		result = Sprite::BlendMode::kScreen;
@@ -245,6 +242,11 @@ private:
 	void CreateConstBuffer();
 
 	/// <summary>
+	/// テクスチャ付き四角形用グラフィックパイプライン生成
+	/// </summary>
+	std::unique_ptr<PipelineSet> CreateTexturedGraphicsPipeline(BlendMode blendMode);
+
+	/// <summary>
 	/// 各種メッシュ生成
 	/// </summary>
 	void CreateMeshes();
@@ -304,6 +306,8 @@ private:
 	bool GetJoystickState(int stickNo, XINPUT_STATE& out);
 	bool GetJoystickStatePrevious(int stickNo, XINPUT_STATE& out);
 	void SetJoystickDeadZone(int stickNo, int deadZoneL, int deadZoneR);
+	void SetJoystickVibration(int stickNo, int leftMotorSpeed, int rightMotorSpeed);
+	void StopJoystickVibration(int stickNo);
 	int GetNumberOfJoysticks();
 	void ScreenPrintf(int x, int y, const char* text, va_list& args);
 	void ConsolePrintf(const char* text, va_list& args);
@@ -336,6 +340,7 @@ private:
 	// パイプラインセット
 	std::array<std::unique_ptr<PipelineSet>, kCountOfBlendMode> pipelineSetTriangles_;
 	std::array<std::unique_ptr<PipelineSet>, kCountOfBlendMode> pipelineSetLines_;
+	std::array<std::unique_ptr<PipelineSet>, kCountOfBlendMode> pipelineSetTexturedQuads_;
 	// 定数バッファ
 	Microsoft::WRL::ComPtr<ID3D12Resource> constBuffer_;
 	// ボックス
@@ -390,9 +395,19 @@ void NoviceSystem::Reset() {
 	indexLine_ = 0;
 	indexQuad_ = 0;
 	indexSprite_ = 0;
+	Sprite::ResetInstanceCount();
 }
 
 void NoviceSystem::CreateGraphicsPipelines() {
+	ShaderManager* shaderManager = dxCommon_->GetShaderManager();
+	// シェーダーのコンパイルと登録
+	shaderManager->SetBaseDirectory(GetResourceRoot()+L"shaders/");
+	shaderManager->Compile("NoviceShapeVS", L"ShapeVS.hlsl", L"vs_6_0");
+	shaderManager->Compile("NoviceShapePS", L"ShapePS.hlsl", L"ps_6_0");
+	shaderManager->Compile("NoviceShapeSRGBOutputPS", L"ShapeSRGBOutputPS.hlsl", L"ps_6_0");
+	shaderManager->Compile("NoviceQuadVS", L"NoviceQuadVS.hlsl", L"vs_6_0");
+	shaderManager->Compile("NoviceQuadPS", L"NoviceQuadPS.hlsl", L"ps_6_0");
+
 	pipelineSetTriangles_[kBlendModeNone] = CreateGraphicsPipeline(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, kBlendModeNone);
 	pipelineSetTriangles_[kBlendModeNormal] = CreateGraphicsPipeline(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, kBlendModeNormal);
 	pipelineSetTriangles_[kBlendModeAdd] = CreateGraphicsPipeline(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, kBlendModeAdd);
@@ -408,35 +423,32 @@ void NoviceSystem::CreateGraphicsPipelines() {
 	pipelineSetLines_[kBlendModeMultily] = CreateGraphicsPipeline(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, kBlendModeMultily);
 	pipelineSetLines_[kBlendModeScreen] = CreateGraphicsPipeline(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, kBlendModeScreen);
 	pipelineSetLines_[kBlendModeExclusion] = CreateGraphicsPipeline(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, kBlendModeExclusion);
+
+	for (int i = 0; i < kCountOfBlendMode; ++i) {
+		pipelineSetTexturedQuads_[i] = CreateTexturedGraphicsPipeline(static_cast<BlendMode>(i));
+	}
 }
 
 std::unique_ptr<NoviceSystem::PipelineSet> NoviceSystem::CreateGraphicsPipeline(D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType, BlendMode blendMode) {
 
 	std::unique_ptr<PipelineSet> pipelineSet = std::make_unique<PipelineSet>();
 
-	Microsoft::WRL::ComPtr<ID3DBlob> vsBlob;    // 頂点シェーダオブジェクト
-	Microsoft::WRL::ComPtr<ID3DBlob> psBlob;    // ピクセルシェーダオブジェクト
-	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob; // エラーオブジェクト
+	ShaderManager* shaderManager = dxCommon_->GetShaderManager();
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
 	HRESULT result;
 
-	// 頂点シェーダの読み込みとコンパイル
-	std::wstring vsFile = GetResourceRoot() + L"shaders/ShapeVS.hlsl";
-	result = D3DCompileFromFile(
-	    vsFile.c_str(), // シェーダファイル名
-	    nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", "vs_5_0", 0, 0, &vsBlob, &errorBlob);
-	assert(SUCCEEDED(result));
+	// 頂点シェーダの取得
+	IDxcBlob* vsBlob = shaderManager->GetBlob("NoviceShapeVS");
+	assert(vsBlob);
 
-	// ピクセルシェーダの読み込みとコンパイル
-	std::wstring psFile;
+	// ピクセルシェーダの取得
+	IDxcBlob* psBlob = nullptr;
 	if (blendMode != kBlendModeExclusion) {
-		psFile = GetResourceRoot() + L"shaders/ShapePS.hlsl";
+		psBlob = shaderManager->GetBlob("NoviceShapePS");
 	} else {
-		psFile = GetResourceRoot() + L"shaders/ShapeSRGBOutputPS.hlsl";
+		psBlob = shaderManager->GetBlob("NoviceShapeSRGBOutputPS");
 	}
-	result = D3DCompileFromFile(
-	    psFile.c_str(), // シェーダファイル名
-	    nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", "ps_5_0", 0, 0, &psBlob, &errorBlob);
-	assert(SUCCEEDED(result));
+	assert(psBlob);
 
 	// 頂点レイアウト
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
@@ -446,8 +458,8 @@ std::unique_ptr<NoviceSystem::PipelineSet> NoviceSystem::CreateGraphicsPipeline(
 
 	// グラフィックスパイプラインの流れを設定
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC gpipeline{};
-	gpipeline.VS = CD3DX12_SHADER_BYTECODE(vsBlob.Get());
-	gpipeline.PS = CD3DX12_SHADER_BYTECODE(psBlob.Get());
+	gpipeline.VS = CD3DX12_SHADER_BYTECODE(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize());
+	gpipeline.PS = CD3DX12_SHADER_BYTECODE(psBlob->GetBufferPointer(), psBlob->GetBufferSize());
 
 	// サンプルマスク
 	gpipeline.SampleMask = D3D12_DEFAULT_SAMPLE_MASK; // 標準設定
@@ -553,6 +565,114 @@ std::unique_ptr<NoviceSystem::PipelineSet> NoviceSystem::CreateGraphicsPipeline(
 	gpipeline.pRootSignature = pipelineSet->rootSignature.Get();
 
 	// グラフィックスパイプラインの生成
+	result = dxCommon_->GetDevice()->CreateGraphicsPipelineState(&gpipeline, IID_PPV_ARGS(&pipelineSet->pipelineState));
+	assert(SUCCEEDED(result));
+
+	return pipelineSet;
+}
+
+std::unique_ptr<NoviceSystem::PipelineSet> NoviceSystem::CreateTexturedGraphicsPipeline(BlendMode blendMode) {
+	std::unique_ptr<PipelineSet> pipelineSet = std::make_unique<PipelineSet>();
+
+	ShaderManager* shaderManager = dxCommon_->GetShaderManager();
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
+	HRESULT result;
+
+	IDxcBlob* vsBlob = shaderManager->GetBlob("NoviceQuadVS");
+	assert(vsBlob);
+
+	IDxcBlob* psBlob = shaderManager->GetBlob("NoviceQuadPS");
+	assert(psBlob);
+
+	D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
+	    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+	    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+	};
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC gpipeline{};
+	gpipeline.VS = CD3DX12_SHADER_BYTECODE(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize());
+	gpipeline.PS = CD3DX12_SHADER_BYTECODE(psBlob->GetBufferPointer(), psBlob->GetBufferSize());
+	gpipeline.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+	gpipeline.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	gpipeline.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	gpipeline.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	gpipeline.DepthStencilState.DepthEnable = false;
+	gpipeline.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	gpipeline.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+
+	D3D12_RENDER_TARGET_BLEND_DESC blenddesc{};
+	blenddesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	blenddesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	blenddesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	blenddesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+
+	switch (blendMode) {
+	case kBlendModeNone:
+		blenddesc.BlendEnable = false;
+		break;
+	case kBlendModeNormal:
+		blenddesc.BlendEnable = true;
+		blenddesc.BlendOp = D3D12_BLEND_OP_ADD;
+		blenddesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blenddesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		break;
+	case kBlendModeAdd:
+		blenddesc.BlendEnable = true;
+		blenddesc.BlendOp = D3D12_BLEND_OP_ADD;
+		blenddesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blenddesc.DestBlend = D3D12_BLEND_ONE;
+		break;
+	case kBlendModeSubtract:
+		blenddesc.BlendEnable = true;
+		blenddesc.BlendOp = D3D12_BLEND_OP_REV_SUBTRACT;
+		blenddesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blenddesc.DestBlend = D3D12_BLEND_ONE;
+		break;
+	case kBlendModeMultiply:
+		blenddesc.BlendEnable = true;
+		blenddesc.BlendOp = D3D12_BLEND_OP_ADD;
+		blenddesc.SrcBlend = D3D12_BLEND_ZERO;
+		blenddesc.DestBlend = D3D12_BLEND_SRC_COLOR;
+		break;
+	case kBlendModeScreen:
+		blenddesc.BlendEnable = true;
+		blenddesc.BlendOp = D3D12_BLEND_OP_ADD;
+		blenddesc.SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+		blenddesc.DestBlend = D3D12_BLEND_ONE;
+		break;
+	case kBlendModeExclusion:
+		blenddesc.BlendEnable = true;
+		blenddesc.BlendOp = D3D12_BLEND_OP_ADD;
+		blenddesc.SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+		blenddesc.DestBlend = D3D12_BLEND_INV_SRC_COLOR;
+		break;
+	}
+	gpipeline.BlendState.RenderTarget[0] = blenddesc;
+	gpipeline.InputLayout.pInputElementDescs = inputLayout;
+	gpipeline.InputLayout.NumElements = _countof(inputLayout);
+	gpipeline.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	gpipeline.NumRenderTargets = 1;
+	gpipeline.RTVFormats[0] = (blendMode != kBlendModeExclusion) ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+	gpipeline.SampleDesc.Count = 1;
+
+	CD3DX12_DESCRIPTOR_RANGE descRangeSRV;
+	descRangeSRV.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	CD3DX12_ROOT_PARAMETER rootparams[2] = {};
+	rootparams[0].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_ALL);
+	rootparams[1].InitAsDescriptorTable(1, &descRangeSRV, D3D12_SHADER_VISIBILITY_ALL);
+
+	CD3DX12_STATIC_SAMPLER_DESC samplerDesc = CD3DX12_STATIC_SAMPLER_DESC(0);
+
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init_1_0(_countof(rootparams), rootparams, 1, &samplerDesc, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	Microsoft::WRL::ComPtr<ID3DBlob> rootSigBlob;
+	result = D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_0, &rootSigBlob, &errorBlob);
+	result = dxCommon_->GetDevice()->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&pipelineSet->rootSignature));
+	assert(SUCCEEDED(result));
+
+	gpipeline.pRootSignature = pipelineSet->rootSignature.Get();
 	result = dxCommon_->GetDevice()->CreateGraphicsPipelineState(&gpipeline, IID_PPV_ARGS(&pipelineSet->pipelineState));
 	assert(SUCCEEDED(result));
 
@@ -943,7 +1063,7 @@ void NoviceSystem::DrawSpriteRect(int destX, int destY, int srcX, int srcY, int 
 
 	auto& sprite = sprites_[indexSprite_];
 
-	const D3D12_RESOURCE_DESC& texDesc = TextureManager::GetInstance()->GetResoureDesc(textureHandle);
+	const D3D12_RESOURCE_DESC& texDesc = TextureManager::GetInstance()->GetResourceDesc(textureHandle);
 
 	sprite->SetTextureHandle(textureHandle);
 	sprite->SetPosition({(float)destX, (float)destY});
@@ -970,7 +1090,7 @@ void NoviceSystem::DrawQuad(int x1, int y1, int x2, int y2, int x3, int y3, int 
 
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
-	const D3D12_RESOURCE_DESC& resourceDesc = TextureManager::GetInstance()->GetResoureDesc(textureHandle);
+	const D3D12_RESOURCE_DESC& resourceDesc = TextureManager::GetInstance()->GetResourceDesc(textureHandle);
 
 	float uvLeft = static_cast<float>(srcX) / static_cast<float>(resourceDesc.Width);
 	float uvRight = static_cast<float>(srcX + srcW) / static_cast<float>(resourceDesc.Width);
@@ -999,7 +1119,11 @@ void NoviceSystem::DrawQuad(int x1, int y1, int x2, int y2, int x3, int y3, int 
 	std::copy(indices.begin(), indices.end(), &quad_->indexMap[indexIndex]);
 
 	// パイプラインステート等の設定
-	Sprite::PreDraw(dxCommon_->GetCommandList(), ToSpriteBlendMode(blendMode_));
+	RenderTargetSwitcher switcher(blendMode_);
+	commandList->SetPipelineState(pipelineSetTexturedQuads_[blendMode_]->pipelineState.Get());
+	commandList->SetGraphicsRootSignature(pipelineSetTexturedQuads_[blendMode_]->rootSignature.Get());
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
 	// 色の設定
 	constBufferForQuads_[indexQuad_].address->color = colorf;
 	// 平行投影による射影行列の設定
@@ -1014,7 +1138,6 @@ void NoviceSystem::DrawQuad(int x1, int y1, int x2, int y2, int x3, int y3, int 
 	TextureManager::GetInstance()->SetGraphicsRootDescriptorTable(commandList, 1, textureHandle);
 	// 描画コマンド
 	commandList->DrawIndexedInstanced(kIndexCountQuad, 1, static_cast<UINT>(indexIndex), static_cast<INT>(indexVertex), 0);
-	Sprite::PostDraw();
 
 	// 使用カウント上昇
 	indexQuad_++;
@@ -1045,6 +1168,12 @@ bool NoviceSystem::GetJoystickState(int stickNo, XINPUT_STATE& out) { return inp
 bool NoviceSystem::GetJoystickStatePrevious(int stickNo, XINPUT_STATE& out) { return input_->GetJoystickStatePrevious(stickNo, out); }
 
 void NoviceSystem::SetJoystickDeadZone(int stickNo, int deadZoneL, int deadZoneR) { input_->SetJoystickDeadZone(stickNo, deadZoneL, deadZoneR); }
+
+void NoviceSystem::SetJoystickVibration(int stickNo, int leftMotorSpeed, int rightMotorSpeed) {
+	input_->SetJoystickVibration(stickNo, static_cast<uint16_t>(leftMotorSpeed), static_cast<uint16_t>(rightMotorSpeed));
+}
+
+void NoviceSystem::StopJoystickVibration(int stickNo) { input_->StopJoystickVibration(stickNo); }
 
 int NoviceSystem::GetNumberOfJoysticks() { return int(input_->GetNumberOfJoysticks()); }
 
@@ -1089,6 +1218,7 @@ int NoviceSystem::ProcessMessage() { return winApp_->ProcessMessage() ? 1 : 0; }
 void NoviceSystem::BeginFrame() {
 	imGuiManager_->Begin();
 	input_->Update(); // DirectX描画前処理
+	audio_->Update();
 	dxCommon_->PreDraw();
 	SetBlendMode(kBlendModeNormal);
 }
@@ -1197,13 +1327,22 @@ void Novice::Initialize(const char* title, int width, int height, bool enableDeb
 void Novice::Finalize() {
 	// 各種解放
 	sNoviceSystem.reset();
-	sAudio->Finalize();
+	sDebugText = nullptr;
+	TextureManager::Terminate();
+	Audio::Terminate();
 	sAudio = nullptr;
-	sImGuiManager->Finalize();
+	Input::Terminate();
+	sInput = nullptr;
+	ImGuiManager::Terminate();
 	sImGuiManager = nullptr;
 
+	// DirectX基盤の解放
+	DirectXCommon::Terminate();
+	sDxCommon = nullptr;
+
 	// ゲームウィンドウの破棄
-	sWinApp->TerminateGameWindow();
+	WinApp::Terminate();
+	sWinApp = nullptr;
 }
 
 void Novice::DrawBox(int x, int y, int w, int h, float angle, unsigned int color, FillMode fillMode) {
@@ -1473,6 +1612,12 @@ int Novice::GetAnalogInputRight(int stickNo, int* x, int* y) {
 }
 
 void Novice::SetJoystickDeadZone(int stickNo, int deadZoneL, int deadZoneR) { sNoviceSystem->SetJoystickDeadZone(stickNo, deadZoneL, deadZoneR); }
+
+void Novice::SetJoystickVibration(int stickNo, int leftMotorSpeed, int rightMotorSpeed) {
+	sNoviceSystem->SetJoystickVibration(stickNo, leftMotorSpeed, rightMotorSpeed);
+}
+
+void Novice::StopJoystickVibration(int stickNo) { sNoviceSystem->StopJoystickVibration(stickNo); }
 
 void Novice::ScreenPrintf(int x, int y, const char* format, ...) {
 
