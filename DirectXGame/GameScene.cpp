@@ -116,6 +116,7 @@ void GameScene::Initialize() {
 	}*/
 
 
+
 	mapChipField_ = new MapChipField();
 	mapChipField_->LoadMapChipCsv("Resources/block.csv");
 
@@ -132,6 +133,8 @@ void GameScene::Initialize() {
 	//KamataEngine::Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
 	//enemy_ = new Enemy();
 	//enemy_->Initialize(modelEnemy_, &camera_, enemyPos);
+
+
 
 	for (int32_t i = 0; i < kMaxEnemy; i++) {
 		Enemy* newEnemy = new Enemy();
@@ -190,6 +193,7 @@ void GameScene::Update() {
 		}
 		return false;
 	});
+
 
 	PhaseChange();
 	fade_->Update();

@@ -5,12 +5,20 @@
 #include <cstdlib>
 #include <d3d12.h>
 #include <d3dx12.h>
+#include <dxcapi.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
+#include <string>
 
 #include "WinApp.h"
+#include <memory>
+#include <vector>
 
 namespace KamataEngine {
+
+class DescriptorHeapManager;
+class GraphicsPipelineManager;
+class ShaderManager;
 
 /// <summary>
 /// DirectX汎用
@@ -22,6 +30,11 @@ public: // メンバ関数
 	/// </summary>
 	/// <returns></returns>
 	static DirectXCommon* GetInstance();
+
+	/// <summary>
+	/// 終了処理
+	/// </summary>
+	static void Terminate();
 
 	/// <summary>
 	/// 初期化
@@ -95,6 +108,12 @@ public: // メンバ関数
 	/// <returns>追加された転送用リソースポインタ</returns>
 	Microsoft::WRL::ComPtr<ID3D12Resource>& AddResourcePointerForTransfer();
 
+	DescriptorHeapManager* GetDescriptorHeapManager() const { return descriptorHeapManager_.get(); }
+	GraphicsPipelineManager* GetGraphicsPipelineManager() const { return graphicsPipelineManager_.get(); }
+	ShaderManager* GetShaderManager() const { return shaderManager_.get(); }
+
+
+
 private: // メンバ変数
 	// ウィンドウズアプリケーション管理
 	WinApp* winApp_;
@@ -112,22 +131,43 @@ private: // メンバ変数
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain_;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> backBuffers_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> depthBuffer_;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap_;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvHeap_;
+	std::vector<uint32_t> rtvIndices_;
+	uint32_t dsvIndex_ = 0;
 	Microsoft::WRL::ComPtr<ID3D12Fence> fence_;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> resourcesForTransfer;
 	UINT64 fenceVal_ = 0;
 	int32_t backBufferWidth_ = 0;
 	int32_t backBufferHeight_ = 0;
+	
+	// 内部マネージャ
+	std::unique_ptr<DescriptorHeapManager> descriptorHeapManager_;
+	std::unique_ptr<GraphicsPipelineManager> graphicsPipelineManager_;
+	std::unique_ptr<ShaderManager> shaderManager_;
+
 	HANDLE frameLatencyWaitableObject_;
 	std::chrono::steady_clock::time_point reference_;
 	int32_t refreshRate_ = 0;
 
+
 private: // メンバ関数
-	DirectXCommon() = default;
-	~DirectXCommon() = default;
 	DirectXCommon(const DirectXCommon&) = delete;
 	const DirectXCommon& operator=(const DirectXCommon&) = delete;
+
+	static std::unique_ptr<DirectXCommon> sInstance_;
+
+public:
+	struct Passkey {
+	private:
+		friend DirectXCommon;
+		Passkey() = default;
+	};
+
+	DirectXCommon(Passkey);
+
+private: // メンバ関数
+	friend std::default_delete<DirectXCommon>;
+	DirectXCommon() = default;
+	~DirectXCommon() = default;
 
 	/// <summary>
 	/// DXGIデバイス初期化
@@ -158,6 +198,11 @@ private: // メンバ関数
 	/// フェンス生成
 	/// </summary>
 	void CreateFence();
+
+	/// <summary>
+	/// DXC関連初期化
+	/// </summary>
+	void InitializeDXC();
 };
 
 } // namespace KamataEngine

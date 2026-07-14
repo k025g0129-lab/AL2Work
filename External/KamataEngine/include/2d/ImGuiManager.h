@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 
 #ifdef USE_IMGUI
 #include <d3d12.h>
@@ -14,6 +15,11 @@ class DirectXCommon;
 class ImGuiManager {
 public:
 	static ImGuiManager* GetInstance();
+
+	/// <summary>
+	/// 終了処理
+	/// </summary>
+	static void Terminate();
 	/// <summary>
 	/// 初期化
 	/// </summary>
@@ -43,14 +49,28 @@ private:
 #ifdef USE_IMGUI
 	// DirectX基盤インスタンス（借りてくる）
 	DirectXCommon* dxCommon_ = nullptr;
-	// SRV用ヒープ
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap_;
+	// デスクリプタインデックス
+	uint32_t descriptorIndex_ = 0;
 #endif
 private:
-	ImGuiManager() = default;
-	~ImGuiManager() = default;
 	ImGuiManager(const ImGuiManager&) = delete;
 	const ImGuiManager& operator=(const ImGuiManager&) = delete;
+
+	static std::unique_ptr<ImGuiManager> sInstance_;
+
+public:
+	struct Passkey {
+	private:
+		friend ImGuiManager;
+		Passkey() = default;
+	};
+
+	ImGuiManager(Passkey);
+
+private:
+	friend std::default_delete<ImGuiManager>;
+	ImGuiManager() = default;
+	~ImGuiManager();
 };
 
 } // namespace KamataEngine

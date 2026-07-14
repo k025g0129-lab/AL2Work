@@ -4,9 +4,14 @@
 #include <3d\Material.h>
 #include <3d\Mesh.h>
 #include <3d\ObjectColor.h>
+#include <3d\WorldTransform.h>
+#include <array>
+#include <base\DirectXCommon.h>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <dxcapi.h>
+#include <memory>
 
 namespace KamataEngine {
 
@@ -19,12 +24,16 @@ class WorldTransform;
 class ModelCommon {
 public:
 	static ModelCommon* GetInstance();
+
+	/// <summary>
+	/// 終了処理
+	/// </summary>
 	static void Terminate();
 
 	// パイプラインセット
 	struct PipelineSet {
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
-		Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
+		ID3D12PipelineState* pipelineState = nullptr;
+		ID3D12RootSignature* rootSignature = nullptr;
 	};
 
 	// カリングモード
@@ -119,10 +128,24 @@ public:
 	ObjectColor* GetObjectColor() const { return defaultObjectColor_.get(); }
 
 private:
+	ModelCommon(const ModelCommon&) = delete;
+	ModelCommon& operator=(ModelCommon&) = delete;
+
+	static std::unique_ptr<ModelCommon> sInstance_;
+
+public:
+	struct Passkey {
+	private:
+		friend ModelCommon;
+		Passkey() = default;
+	};
+
+	ModelCommon(Passkey);
+
+private:
+	friend std::default_delete<ModelCommon>;
 	ModelCommon() = default;
 	~ModelCommon() = default;
-	ModelCommon(ModelCommon&) = delete;
-	ModelCommon& operator=(ModelCommon&) = delete;
 
 	/// <summary>
 	/// グラフィックスパイプラインの初期化
@@ -137,27 +160,22 @@ private:
 
 	void CreateAndAddPipelineSet(CullingMode cullingMode, BlendMode blendMode, DepthTestMode depthTestMode);
 
-	// シングルトンインスタンス
-	static ModelCommon* sInstance_;
-
 	bool initialized_ = false;
 
 	// デスクリプタサイズ
 	UINT descriptorHandleIncrementSize_ = 0u;
 	// コマンドリスト
 	ID3D12GraphicsCommandList* commandList_ = nullptr;
-	// パイプラインセット
-	std::unordered_map<PipelineSetKey, PipelineSet, PipelineSetKeyHash, PipelineSetKeyEqual> pipelineSets_;
+	// パイプラインセット（キャッシュ）
+	using PipelineCache = std::array<std::array<std::array<PipelineSet, 
+		static_cast<size_t>(DepthTestMode::kCount)>, 
+		static_cast<size_t>(BlendMode::kCount)>, 
+		static_cast<size_t>(CullingMode::kCount)>;
+	PipelineCache pipelineSets_;
 	// デフォルトライト
 	std::unique_ptr<LightGroup> defaultLightGroup_;
 	// デフォルトオブジェクトα
 	std::unique_ptr<ObjectColor> defaultObjectColor_;
-	// 頂点シェーダオブジェクト
-	Microsoft::WRL::ComPtr<ID3DBlob> vsBlob_;
-	// ピクセルシェーダオブジェクト
-	Microsoft::WRL::ComPtr<ID3DBlob> psBlob_;
-	// ルートシグネチャ
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
 };
 
 /// <summary>
@@ -168,11 +186,10 @@ public: // 列挙子
 	/// <summary>
 	/// ルートパラメータ番号
 	/// </summary>
-	enum class RoomParameter {
+	enum class RootParameter {
 		kWorldTransform, // ワールド変換行列
 		kCamera,         // カメラ
 		kMaterial,       // マテリアル
-		kTexture,        // テクスチャ
 		kLight,          // ライト
 		kObjectColor,    // オブジェクトアルファ
 	};
@@ -187,16 +204,6 @@ private:
 	static const char* kDefaultModelName;
 
 public: // 静的メンバ関数
-	/// <summary>
-	/// ゲーム中一度だけ実行する初期化
-	/// </summary>
-	static void StaticInitialize();
-
-	/// <summary>
-	/// ゲーム中一度だけ実行する終了処理
-	/// </summary>
-	static void StaticFinalize();
-
 	/// <summary>
 	/// 3Dモデル生成
 	/// </summary>
@@ -214,10 +221,10 @@ public: // 静的メンバ関数
 	/// <summary>
 	/// 球モデル生成
 	/// </summary>
-	/// <param name="divisionVertial">垂直方向（緯度）分割数</param>
+	/// <param name="divisionVertical">垂直方向（緯度）分割数</param>
 	/// <param name="divisionHorizontal">水平方向（経度）分割数</param>
 	/// <returns>生成されたモデル</returns>
-	static Model* CreateSphere(uint32_t divisionVertial = 10, uint32_t divisionHorizontal = 10);
+	static Model* CreateSphere(uint32_t divisionVertical = 10, uint32_t divisionHorizontal = 10);
 
 	/// <summary>
 	/// 描画前処理
@@ -248,9 +255,9 @@ public: // メンバ関数
 	/// </summary>
 	/// <param name="worldTransform">ワールドトランスフォーム</param>
 	/// <param name="camera">カメラ</param>
-	/// <param name="textureHadle">テクスチャハンドル</param>
+	/// <param name="textureHandle">テクスチャハンドル</param>
 	/// <param name="objectColor">オブジェクトカラー</param>
-	void Draw(const WorldTransform& worldTransform, const Camera& camera, uint32_t textureHadle, const ObjectColor* objectColor = nullptr);
+	void Draw(const WorldTransform& worldTransform, const Camera& camera, uint32_t textureHandle, const ObjectColor* objectColor = nullptr);
 
 	/// <summary>
 	/// メッシュコンテナを取得
@@ -272,7 +279,7 @@ public: // メンバ関数
 
 private: // メンバ変数
 	// 名前
-	std::string name_;
+	std::string name;
 	// メッシュコンテナ
 	std::vector<std::unique_ptr<Mesh>> meshes_;
 	// マテリアルコンテナ

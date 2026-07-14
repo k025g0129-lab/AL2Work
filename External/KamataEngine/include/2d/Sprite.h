@@ -6,6 +6,7 @@
 #include <math\Vector2.h>
 #include <math\Vector3.h>
 #include <math\Vector4.h>
+#include <array>
 #include <string>
 #include <wrl.h>
 
@@ -26,7 +27,6 @@ public:
 		kExclusion, //!< 除外。(1 - Dest) * Src + (1 - Src) * Dest
 
 		kCountOfBlendMode,    //!< ブレンドモード数。指定はしない
-		kMultily = kMultiply, //!< スペルミス互換用
 	};
 
 public: // サブクラス
@@ -42,18 +42,26 @@ public: // サブクラス
 	/// 定数バッファ用データ構造体
 	/// </summary>
 	struct ConstBufferData {
-		Vector4 color; // 色 (RGBA)
 		Matrix4x4 mat; // ３Ｄ変換行列
+		Vector2 uvOffset;         // UVオフセット
+		Vector2 uvScale;          // UVスケール
+		Vector4 color; // 色 (RGBA)
+		uint32_t textureDescriptorIndex; // デスクリプタインデックス
 	};
 
 public: // 静的メンバ関数
+	/// <summary>
+	/// インスタンスカウントをリセットする (毎フレームの開始時に呼び出す)
+	/// </summary>
+	static void ResetInstanceCount();
+
 	/// <summary>
 	/// 静的初期化
 	/// </summary>
 	/// <param name="device">デバイス</param>
 	/// <param name="window_width">画面幅</param>
 	/// <param name="window_height">画面高さ</param>
-	static void StaticInitialize(ID3D12Device* device, int window_width, int window_height, const std::wstring& directoryPath = L"Resources/");
+	static void StaticInitialize(ID3D12Device* device, int window_width, int window_height, const std::wstring& directoryPath = L"");
 
 	/// <summary>
 	/// 描画前処理
@@ -83,16 +91,27 @@ private: // 静的メンバ変数
 	static const int kVertNum = 4;
 	// デバイス
 	static ID3D12Device* sDevice_;
-	// デスクリプタサイズ
-	static UINT sDescriptorHandleIncrementSize_;
 	// コマンドリスト
 	static ID3D12GraphicsCommandList* sCommandList_;
-	// ルートシグネチャ
-	static Microsoft::WRL::ComPtr<ID3D12RootSignature> sRootSignature_;
-	// パイプラインステートオブジェクト
-	static std::array<Microsoft::WRL::ComPtr<ID3D12PipelineState>, size_t(BlendMode::kCountOfBlendMode)> sPipelineStates_;
 	// 射影行列
 	static Matrix4x4 sMatProjection_;
+	// パイプラインステート（キャッシュ）
+	static std::array<ID3D12PipelineState*, static_cast<size_t>(BlendMode::kCountOfBlendMode)> sPipelineStates_;
+	// ルートシグネチャ（キャッシュ）
+	static std::array<ID3D12RootSignature*, static_cast<size_t>(BlendMode::kCountOfBlendMode)> sRootSignatures_;
+
+	// 共通頂点バッファ
+	static Microsoft::WRL::ComPtr<ID3D12Resource> sVertexBuffer_;
+	static D3D12_VERTEX_BUFFER_VIEW sVbView_;
+	// インスタンスバッファ
+	static const uint32_t kMaxInstanceCount = 1024;
+	static Microsoft::WRL::ComPtr<ID3D12Resource> sInstanceBuffer_;
+	static ConstBufferData* sInstanceMap_;
+	static uint32_t sInstanceCount_;
+	// 現在のブレンドモード
+	static BlendMode sBlendMode_;
+	// インスタンスバッファの書き込みオフセット
+	static uint32_t sInstanceIndexOffset_;
 
 public: // メンバ関数
 	/// <summary>
@@ -178,16 +197,8 @@ public: // メンバ関数
 	void Draw();
 
 private: // メンバ変数
-	// 頂点バッファ
-	Microsoft::WRL::ComPtr<ID3D12Resource> vertBuff_;
-	// 定数バッファ
-	Microsoft::WRL::ComPtr<ID3D12Resource> constBuff_;
-	// 頂点バッファマップ
-	VertexPosUv* vertMap_ = nullptr;
 	// 定数バッファマップ
-	ConstBufferData* constMap_ = nullptr;
-	// 頂点バッファビュー
-	D3D12_VERTEX_BUFFER_VIEW vbView_{};
+	// ConstBufferData* constMap_ = nullptr;
 	// テクスチャ番号
 	UINT textureHandle_ = 0;
 	// Z軸回りの回転角
@@ -219,11 +230,6 @@ private: // メンバ関数
 	/// </summary>
 	Sprite();
 	Sprite(uint32_t textureHandle, Vector2 position, Vector2 size, Vector4 color, Vector2 anchorpoint, bool isFlipX, bool isFlipY);
-
-	/// <summary>
-	/// 頂点データ転送
-	/// </summary>
-	void TransferVertices();
 };
 
 } // namespace KamataEngine

@@ -377,6 +377,20 @@ public:
 	static void SetJoystickDeadZone(int stickNo, int deadZoneL, int deadZoneR);
 
 	/// <summary>
+	/// ジョイスティックの振動を設定する (XInput専用)
+	/// </summary>
+	/// <param name="stickNo">ジョイスティック番号</param>
+	/// <param name="leftMotorSpeed">左モーターの速度 0~65535</param>
+	/// <param name="rightMotorSpeed">右モーターの速度 0~65535</param>
+	static void SetJoystickVibration(int stickNo, int leftMotorSpeed, int rightMotorSpeed);
+
+	/// <summary>
+	/// ジョイスティックの振動を停止する (XInput専用)
+	/// </summary>
+	/// <param name="stickNo">ジョイスティック番号</param>
+	static void StopJoystickVibration(int stickNo);
+
+	/// <summary>
 	/// スクリーンにデバッグ用文字列を表示する
 	/// </summary>
 	/// <param name="x">表示するデバッグ用文字列の左上座標 X</param>

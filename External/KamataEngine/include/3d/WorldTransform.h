@@ -11,6 +11,7 @@ namespace KamataEngine {
 // 定数バッファ用データ構造体
 struct ConstBufferDataWorldTransform {
 	Matrix4x4 matWorld; // ローカル → ワールド変換行列
+	Matrix4x4 worldInverseTranspose; // 逆転置行列
 };
 
 /// <summary>
@@ -37,14 +38,6 @@ public:
 	/// </summary>
 	void Initialize();
 	/// <summary>
-	/// 定数バッファ生成
-	/// </summary>
-	void CreateConstBuffer();
-	/// <summary>
-	/// マッピングする
-	/// </summary>
-	void Map();
-	/// <summary>
 	/// 行列を転送する
 	/// </summary>
 	void TransferMatrix();
@@ -62,6 +55,15 @@ private:
 	// コピー禁止
 	WorldTransform(const WorldTransform&) = delete;
 	WorldTransform& operator=(const WorldTransform&) = delete;
+
+	/// <summary>
+	/// 定数バッファ生成
+	/// </summary>
+	void CreateConstBuffer();
+	/// <summary>
+	/// マッピングする
+	/// </summary>
+	void Map();
 };
 
 static_assert(!std::is_copy_assignable_v<WorldTransform>);

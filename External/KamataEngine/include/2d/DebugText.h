@@ -2,6 +2,7 @@
 
 #include "Sprite.h"
 #include <Windows.h>
+#include <memory>
 #include <string>
 
 namespace KamataEngine {
@@ -75,7 +76,7 @@ private:
 	// テクスチャハンドル
 	uint32_t textureHandle_ = 0;
 	// スプライトデータの配列
-	Sprite* spriteDatas_[kMaxCharCount] = {};
+	std::unique_ptr<Sprite> spriteDatas_[kMaxCharCount];
 	// スプライトデータ配列の添え字番号
 	int spriteIndex_ = 0;
 

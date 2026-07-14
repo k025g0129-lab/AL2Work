@@ -1,11 +1,13 @@
 #pragma once
+#include <memory>
 
 #include <array>
+#include <atomic>
 #include <cstdint>
-#include <mutex>
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <wrl.h>
 #include <xaudio2.h>
 
@@ -26,13 +28,16 @@ public:
 		// バッファ
 		std::vector<uint8_t> buffer;
 		// 名前
-		std::string name_;
+		std::string name;
 	};
 
 	// 再生データ
-	struct Voice {
+	class Voice {
+	public:
 		uint32_t handle = 0u;
 		IXAudio2SourceVoice* sourceVoice = nullptr;
+		std::atomic_bool isFinished = false;
+		~Voice();
 	};
 
 	/// <summary>
@@ -56,14 +61,29 @@ public:
 		// ボイスの実行エラー時
 		STDMETHOD_(void, OnVoiceError)
 		([[maybe_unused]] THIS_ void* pBufferContext, [[maybe_unused]] HRESULT Error){};
+
+		void SetAudio(Audio* audio) { audio_.store(audio); }
+
+	private:
+		std::atomic<Audio*> audio_ = nullptr;
 	};
 
 	static Audio* GetInstance();
 
 	/// <summary>
+	/// 静的終了処理
+	/// </summary>
+	static void Terminate();
+
+	/// <summary>
 	/// 初期化
 	/// </summary>
 	void Initialize(const std::string& directoryPath = "Resources/");
+
+	/// <summary>
+	/// 毎フレーム処理
+	/// </summary>
+	void Update();
 
 	/// <summary>
 	/// 終了処理
@@ -127,18 +147,34 @@ public:
 	void SetVolume(uint32_t voiceHandle, float volume);
 
 private:
-	Audio() = default;
-	~Audio() = default;
 	Audio(const Audio&) = delete;
 	const Audio& operator=(const Audio&) = delete;
+
+	static std::unique_ptr<Audio> sInstance_;
+
+public:
+	struct Passkey {
+	private:
+		friend Audio;
+		Passkey() = default;
+	};
+
+	Audio(Passkey);
+
+private:
+	friend std::default_delete<Audio>;
+	Audio() = default;
+	~Audio();
+	void RemoveFinishedVoices();
 
 	// XAudio2のインスタンス
 	Microsoft::WRL::ComPtr<IXAudio2> xAudio2_;
 	// サウンドデータコンテナ
 	std::array<SoundData, kMaxSoundData> soundDatas_;
 	// 再生中データコンテナ
+	// AudioのAPIとUpdateは同一スレッドから呼ばれる前提
 	// std::unordered_map<uint32_t, IXAudio2SourceVoice*> voices_;
-	std::set<Voice*> voices_;
+	std::vector<std::unique_ptr<Voice>> voices_;
 	// サウンド格納ディレクトリ
 	std::string directoryPath_;
 	// 次に使うサウンドデータの番号
@@ -147,7 +183,7 @@ private:
 	uint32_t indexVoice_ = 0u;
 	// オーディオコールバック
 	XAudio2VoiceCallback voiceCallback_;
-	std::mutex voiceMutex_;
+	std::atomic_bool hasFinishedVoice_ = false;
 };
 
 } // namespace KamataEngine

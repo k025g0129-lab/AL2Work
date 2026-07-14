@@ -507,14 +507,14 @@ void Player::MCDRightDirection(CollisionMaPInfo& info) {
 	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kRightTop]);
 	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
 	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex + 1, indexSet.yIndex );
-	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
+	if (mapChipType == MapChipType::kBlock ) {
 		hit = true;
 	}
 
 	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kRightBottom]);
 	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
 	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex + 1, indexSet.yIndex);
-	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
+	if (mapChipType == MapChipType::kBlock) {
 		hit = true;
 	}
 
@@ -564,14 +564,14 @@ void Player::MCDLeftDirection(CollisionMaPInfo& info) {
 	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kLeftTop]);
 	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
 	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex - 1, indexSet.yIndex);
-	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
+	if (mapChipType == MapChipType::kBlock) {
 		hit = true;
 	}
 
 	indexSet = mapChipField_->GetMapChipIndexSetByPos(posNew[kLeftBottom]);
 	mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
 	mapChipTypeNext = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex - 1, indexSet.yIndex);
-	if (mapChipType == MapChipType::kBlock && mapChipTypeNext != MapChipType::kBlock) {
+	if (mapChipType == MapChipType::kBlock) {
 		hit = true;
 	}
 
