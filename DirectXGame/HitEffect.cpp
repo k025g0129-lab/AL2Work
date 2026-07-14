@@ -2,12 +2,13 @@
 #include <numbers> 
 #include <cassert> 
 #include "function.h"
+
 KamataEngine::Model* HitEffect::model_ = nullptr ;
 KamataEngine::Camera* HitEffect::camera_ = nullptr;
 
 HitEffect::~HitEffect() { 
-	delete model_;
-	delete camera_;
+
+
 }
 
 void HitEffect::Initialize(KamataEngine::Vector3 pos) { 

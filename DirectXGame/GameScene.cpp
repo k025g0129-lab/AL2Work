@@ -31,6 +31,7 @@ GameScene::~GameScene() {
 	delete fade_;
 
 
+
 	for (Enemy* enemy : enemies_) {
 		delete enemy;
 	}
