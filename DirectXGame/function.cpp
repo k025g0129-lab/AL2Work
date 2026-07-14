@@ -42,7 +42,7 @@ void MakeAffineMatrix(KamataEngine::WorldTransform* worldTransform) {
 	T.m[3][0] = worldTransform->translation_.x;
 	T.m[3][1] = worldTransform->translation_.y;
 	T.m[3][2] = worldTransform->translation_.z;
-
+	
 	KamataEngine::Matrix4x4 Rx = MatrixInitialize;
 	Rx.m[0][0] = 1.0f;
 	Rx.m[1][1] = cosf(worldTransform->rotation_.x);
