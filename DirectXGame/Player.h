@@ -4,15 +4,12 @@
 #include "function.h"
 
 class Enemy;
+class ShieldEnemy;
 
 class Player {
 
 
 private:
-	enum class LRDirection {
-		kRight,
-		kLeft,
-	};
 
 	struct CollisionMaPInfo{
 		bool isCeilingCollision = false;
@@ -33,8 +30,9 @@ private:
 
 
 	enum class Behavior {
-		kRoot,
-		kAttact,
+		kRoot, 
+		kAttact, 
+		kKnockback,
 		kUnknown,
 	};
 
@@ -71,8 +69,10 @@ public:
 
 	void BehaviorRootInitialize();
 	void BehaviorAttackInitialize();
+	void BehaviorKnockbackInitialize();
 	void BehaviorRootUpdate();
 	void BehaviorAttackUpdate();
+	void BehaviorKnockbackUpdate();
 	
 	KamataEngine::Vector3 CornerPosition(const KamataEngine::Vector3& center, Corner corner);
 
@@ -84,6 +84,7 @@ public:
 
 	void SetMapChipField(MapChipField* mapChipField) ;
 	void OnCollision(const Enemy* enemy);
+	void OnShieldCollision(const ShieldEnemy* shieldEnemy);
 	
 	bool isAttack() const {
 		if (behavior_ == Behavior::kAttact) {
@@ -93,9 +94,14 @@ public:
 		return false;
 	}
 
-	const KamataEngine::Vector3& GetWorldTransform() const { return worldTransform_.translation_; };
-		
+	void isBehaviorRequestKnockback() { 
+		isKnockbackRequest = true;
+	
+	}
 
+	const KamataEngine::Vector3& GetWorldTransform() const { return worldTransform_.translation_; };
+	
+	const LRDirection GetLRDirection() const { return lrDirection_; };
 
 
 private:
@@ -151,6 +157,10 @@ private:
 	//攻撃エフェクト
 	KamataEngine::Model* modelAttack_ = nullptr;
 	KamataEngine::WorldTransform worldTransformAttack_;
+
+	//ノックバック　
+	bool isKnockbackRequest = false;
+	uint32_t knockbackParameter_ = 0;
 
 
 

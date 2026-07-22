@@ -22,7 +22,9 @@ GameScene::~GameScene() {
 	delete modelBlock_;
 	delete modelSkydome_;
 	delete modelEnemy_;
+	delete modelShieldEnemy_;
 	delete modelEnemyDeathEffect_;
+	delete modelEnemyGuardEffect_;
 	delete modelAttack_;
 	delete modelDeathParticles_;
 	delete skydome_;
@@ -36,11 +38,21 @@ GameScene::~GameScene() {
 		delete enemy;
 	}
 
+	for (ShieldEnemy* shieldEnemiy : shieldEnemies_) {
+		delete shieldEnemiy;
+	}
+
 	for (HitEffect* enemyDeathParticles_ : enemyDeathParticless_) {
 		delete enemyDeathParticles_;
 	}
 
+
+	for (GuardEffect* enemyGuardParticles_ : enemyGuardParticless_) {
+		delete enemyGuardParticles_;
+	}
+
 	enemies_.clear();
+	shieldEnemies_.clear();
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {	
@@ -62,9 +74,11 @@ void GameScene::Initialize() {
 	modelBlock_ = Model::CreateFromOBJ("block", true);
 	modelSkydome_ = Model::CreateFromOBJ("skydome",true);
 	modelEnemy_ = Model::CreateFromOBJ("enemy", true);
+	modelShieldEnemy_ = Model::CreateFromOBJ("shieldEnemy", true);
 	modelDeathParticles_ = Model::CreateFromOBJ("deathParticle", true);
 	modelAttack_ = Model::CreateFromOBJ("hit_effect", true);
 	modelEnemyDeathEffect_ = Model::CreateFromOBJ("particle", true);
+	modelEnemyGuardEffect_ = Model::CreateFromOBJ("ring", true);
 
 	worldTransform_.Initialize();
 	camera_.farZ = 1500.0f;
@@ -146,6 +160,13 @@ void GameScene::Initialize() {
 		
 	}
 
+	for (int32_t i = 0; i < kMaxEnemy; i++) {
+		ShieldEnemy* newShieldEnemy = new ShieldEnemy();
+		Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(20 * i, 10);
+		newShieldEnemy->Initialize(modelShieldEnemy_, &camera_, enemyPos);
+		newShieldEnemy->SetGameScene(this);
+		shieldEnemies_.push_back(newShieldEnemy);
+	}
 
 
 
@@ -179,6 +200,14 @@ void GameScene::Initialize() {
 		newEnemyDeathParticles->SetModel(modelEnemyDeathEffect_);
 		
 		enemyDeathParticless_.push_back(newEnemyDeathParticles);
+
+		GuardEffect* newEnemyGuardParticles = new GuardEffect();
+		Vector3 enemyGuardParticlesPos = mapChipField_->GetMapChipPositionByIndex(20 * i, 5);
+		newEnemyGuardParticles->Initialize(enemyGuardParticlesPos);
+		newEnemyGuardParticles->SetCamera(&camera_);
+		newEnemyGuardParticles->SetModel(modelEnemyGuardEffect_);
+		
+		enemyGuardParticless_.push_back(newEnemyGuardParticles);
 	}
 
 	InitializeRandom();
@@ -190,6 +219,15 @@ void GameScene::Update() {
 	enemies_.remove_if([](Enemy* enemy) {
 		if (enemy->GetIsDead()) {
 			delete enemy;
+			return true;
+		}
+		return false;
+	});
+
+		
+	shieldEnemies_.remove_if([](ShieldEnemy* shieldEnemy) {
+		if (shieldEnemy->GetIsDead()) {
+			delete shieldEnemy;
 			return true;
 		}
 		return false;
@@ -248,12 +286,21 @@ void GameScene::Draw() {
 		enemy->Draw();
 	}
 
+	for (ShieldEnemy* shieldEnemy : shieldEnemies_) {
+		shieldEnemy->Draw();
+	}
 		
 	for (HitEffect* enemyDeathParticles : enemyDeathParticless_) {
 		
 		enemyDeathParticles->Draw();
 	}
-	//enemy_->Draw();
+
+	for (GuardEffect* enemyGuardParticles_ : enemyGuardParticless_) {
+
+		enemyGuardParticles_->Draw();
+	}
+		
+		//enemy_->Draw();
 
 	// デスパーティクルが存在するなら...???
 	if (deathParticles_) {
@@ -368,8 +415,17 @@ void GameScene::GamePlayPhase() {
 	for (Enemy* enemy : enemies_) {
 		enemy->Update();
 	}
+
+	for (ShieldEnemy* shieldEnemy : shieldEnemies_) {
+		shieldEnemy->Update();
+	}
+
 	for (HitEffect* enemyDeathParticles : enemyDeathParticless_) {
 		enemyDeathParticles->Update();
+	}
+
+	for (GuardEffect* enemyGuardParticles_ : enemyGuardParticless_) {
+		enemyGuardParticles_->Update();
 	}
 
 	// カメラコントロールの更新
@@ -393,6 +449,10 @@ void GameScene::DeathParticlePhase() {
 	// 敵の更新(複数)
 	for (Enemy* enemy : enemies_) {
 		enemy->Update();
+	}
+
+	for (ShieldEnemy* shieldEnemy : shieldEnemies_) {
+		shieldEnemy->Update();
 	}
 
 	// デスパーティクルが存在するなら...???
@@ -435,7 +495,7 @@ void GameScene::BlocksUpdate() {
 
 void GameScene::CheckAllCollisions() {
 
-	#pragma region 自キャラと敵キャラ当たり判定
+	#pragma region 自キャラとノーマル敵キャラ当たり判定
 	{
 		AABB aabb1, aabb2;
 		aabb1 = player_->GetAABB();
@@ -458,6 +518,27 @@ void GameScene::CheckAllCollisions() {
 	}
 	#pragma endregion
 
+	
+	#pragma region 自キャラとシールド敵キャラ当たり判定
+	{
+		AABB aabb1, aabb2;
+		aabb1 = player_->GetAABB();
+		for (ShieldEnemy* shieldEnemy : shieldEnemies_) {
+
+			if (shieldEnemy->GetIsCollisionDisabled()) {
+				continue;
+			}
+
+			aabb2 = shieldEnemy->GetAABB();
+
+			if (IsCollisionAABB2D(aabb1, aabb2)) {
+				player_->OnShieldCollision(shieldEnemy);
+				shieldEnemy->OnCollision(player_);
+			}
+		}
+	}
+	#pragma endregion
+
 
 
 }
@@ -467,5 +548,12 @@ void GameScene::CreateHitEffect(KamataEngine::Vector3 pos) {
 	newEnemyDeathParticles->SetIsDead();
 	enemyDeathParticless_.push_back(newEnemyDeathParticles);
 
+}
+
+void GameScene::CreateGuardEffect(KamataEngine::Vector3 pos) {
+	GuardEffect* newEnemyGuardParticles = GuardEffect::Create(pos);
+	newEnemyGuardParticles->SetIsKnockback();
+	enemyGuardParticless_.push_back(newEnemyGuardParticles);
+	
 }
 

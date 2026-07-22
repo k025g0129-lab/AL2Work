@@ -144,6 +144,13 @@ void Player::Update() {
 	//8行列計算
 	MakeAffineMatrix(&worldTransform_);
 */
+
+
+	if (isKnockbackRequest) {
+		behaviorRequest_ = Behavior::kKnockback;
+
+		isKnockbackRequest = false;
+	}
 		
 	if (behaviorRequest_ != Behavior::kUnknown) {
 		behavior_ = behaviorRequest_;
@@ -154,7 +161,9 @@ void Player::Update() {
 		case Player::Behavior::kAttact:
 			BehaviorAttackInitialize();
 			break;
-
+		case Player::Behavior::kKnockback:
+			
+			break;
 		}
 		behaviorRequest_ = Behavior::kUnknown;
 	
@@ -170,6 +179,12 @@ void Player::Update() {
 	case Player::Behavior::kAttact:
 
 		BehaviorAttackUpdate();
+		break;
+
+
+	case Player::Behavior::kKnockback:
+
+		BehaviorKnockbackUpdate();
 		break;
 
 	}
@@ -598,6 +613,15 @@ void Player::BehaviorAttackInitialize() {
 
 }
 
+void Player::BehaviorKnockbackInitialize() { 
+	knockbackParameter_ = 0;
+	worldTransform_.scale_.z = 1.0f;
+	worldTransform_.scale_.y = 1.0f;
+	attackPhase_ = AttackPhase::kCharge;
+	attackParameter_ = 0;
+
+}
+
 void Player::BehaviorRootUpdate() {
 
 	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_Z)) {
@@ -735,6 +759,60 @@ void Player::BehaviorAttackUpdate() {
 
 }
 
+void Player::BehaviorKnockbackUpdate() {
+	knockbackParameter_ ++;
+
+	if (lrDirection_ == LRDirection::kRight) {
+		// Vector3Add(velocity_, attackVelocity);
+		velocity_.x = -0.8f;
+
+	} else {
+		// Vector3Sub(velocity_, attackVelocity);
+		velocity_.x = 0.8f;
+	}
+
+	if (knockbackParameter_ >= chargeTime ) {
+
+		knockbackParameter_ = 0;
+		behaviorRequest_ = Behavior::kRoot;
+		BehaviorKnockbackInitialize();
+	}
+
+		// 1移動入力
+	// MovementInput();
+
+	// 2移動量加味して衝突判定
+	CollisionMaPInfo collisionMaPInfo;
+	collisionMaPInfo.moveAmount = velocity_;
+	// collisionMaPInfo.moveAmount = velocity_;
+	MapCollisionDetection(collisionMaPInfo);
+
+	// 3判定結果を反映して移動
+	JudgmentMovement(collisionMaPInfo);
+
+	// 4天井接触での処理
+	CeilingContactDetection(collisionMaPInfo);
+
+	// 5壁に接触してる処理
+	WallDetection(collisionMaPInfo);
+
+	// 6接地状態の切り替え処理
+	GroundStateSwitching(collisionMaPInfo);
+
+	// 7旋回制御
+	TurningControl();
+
+	// 8行列計算
+	MakeAffineMatrix(&worldTransform_);
+
+	// 9攻撃エフェクト行列計算
+	worldTransformAttack_.translation_ = worldTransform_.translation_;
+	worldTransformAttack_.rotation_ = worldTransform_.rotation_;
+	MakeAffineMatrix(&worldTransformAttack_);
+
+
+}
+
 
 void Player::Draw() {
 
@@ -820,6 +898,15 @@ void Player::OnCollision(const Enemy* enemy) {
 	}
 
 	(void)enemy;
+	isDead_ = true;
+}
+
+void Player::OnShieldCollision(const ShieldEnemy* shieldEnemy) {
+	if (isAttack()) {
+		return;
+	}
+
+	(void)shieldEnemy;
 	isDead_ = true;
 }
 

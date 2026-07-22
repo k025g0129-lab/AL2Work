@@ -13,23 +13,21 @@ HitEffect::~HitEffect() {
 
 void HitEffect::Initialize(KamataEngine::Vector3 pos) { 
 	circleworldTransform_.Initialize();
-	circleworldTransform_.scale_ = {0.5f,0.5f,0.5f};
+	circleworldTransform_.scale_ = {0.5f, 0.5f, 0.5f};
 	circleworldTransform_.translation_ = pos;
 	ellipseDeath.Initialize();
 
 	for (KamataEngine::WorldTransform& worldTransform : ellipseWorldTransform_) {
 
-		worldTransform.scale_ = {0.2f,1.3f,1.0f};
-		worldTransform.rotation_ = { 0.0f, 0.0f, RandomFloat(-(std::numbers::pi_v<float> / 2.0f), std::numbers::pi_v<float> / 2.0f) };
+		worldTransform.scale_ = {0.2f, 1.3f, 1.0f};
+		worldTransform.rotation_ = {0.0f, 0.0f, RandomFloat(-(std::numbers::pi_v<float> / 2.0f), std::numbers::pi_v<float> / 2.0f)};
 		worldTransform.translation_ = pos;
 
 		worldTransform.Initialize();
 	}
-
 }
 
 void HitEffect::Update() {
-
 
 	if (behaviorRequest_ != Behavior::kUnknown) {
 		behavior_ = behaviorRequest_;
@@ -51,8 +49,6 @@ void HitEffect::Update() {
 
 		DeathAnimationUpdate();
 
-
-
 		break;
 	case HitEffect::Behavior::kDeath:
 		break;
@@ -60,13 +56,11 @@ void HitEffect::Update() {
 		break;
 	}
 
-
 	MakeAffineMatrix(&circleworldTransform_); 
 
 	for (KamataEngine::WorldTransform& worldTransform : ellipseWorldTransform_) {
 		MakeAffineMatrix(&worldTransform); 
 	}
-
 }
 
 void HitEffect::Draw() { 
@@ -82,10 +76,7 @@ void HitEffect::Draw() {
 		break;
 	case HitEffect::Behavior::kDeath:
 		break;
-
 	}
-
-
 }
 
 HitEffect* HitEffect::Create(KamataEngine::Vector3 pos) {
@@ -96,18 +87,13 @@ HitEffect* HitEffect::Create(KamataEngine::Vector3 pos) {
 
 	instance->Initialize(pos);
 	
-	
 	return instance; 
-
-
 }
 
 void HitEffect::SetIsDead() { 
 	behaviorRequest_ = Behavior::kDeathAnimation;
 
 }
-
-
 
 void HitEffect::DeathAnimationUpdate() {
 
