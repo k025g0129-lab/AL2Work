@@ -8,10 +8,11 @@
 
 namespace {
 
-	std::map<std::string, MapChipType> mapChipTable = 
-	{
-		{"0",MapChipType::kBlank},
-		{"1",MapChipType::kBlock},
+	std::map<char, MapChipType> mapChipTypeTable = {
+		//{"0",MapChipType::kBlank},
+		{'B', MapChipType::kBlock},
+		{'P', MapChipType::kPlayer},
+		{'E', MapChipType::kEnemy},
 	};
 
 }
@@ -20,7 +21,7 @@ void MapChipField::ResetMapChipData() {
     
     mapChipData_.data.clear();
 	mapChipData_.data.resize(kNumBlockVirtical);
-	for (std::vector<MapChipType>& mapChipTypeLine : mapChipData_.data) {
+	for (std::vector<MapChipDataUnit>& mapChipTypeLine : mapChipData_.data) {
 		mapChipTypeLine.resize(kNumBlockHorizontal);
 
 	}
@@ -50,10 +51,23 @@ void MapChipField::LoadMapChipCsv(const std::string& filePath) {
 
 			std ::string word;
 			std::getline(lineStream, word, ',');
-
-			if (mapChipTable.contains(word)) {
-				mapChipData_.data[i][j] = mapChipTable[word];
+			
+			if (word.empty()) {
+				continue;
 			}
+
+			if (!mapChipTypeTable.contains(word[kChipType])) {
+				continue;
+			}
+
+			mapChipData_.data[i][j].type = mapChipTypeTable[word[kChipType]];
+
+			if (word.size() <= kChipSubID) {
+				continue;
+			}
+
+			mapChipData_.data[i][j].subID = static_cast<uint8_t>(word[kChipSubID] - '0');	
+
 		}
 	}
 
@@ -68,8 +82,20 @@ MapChipType MapChipField::GetMapChipTypeByIndex(uint32_t xIndex, uint32_t yIndex
 		return MapChipType :: kBlank;
 	}
 
-	return mapChipData_.data[yIndex][xIndex];
+	return mapChipData_.data[yIndex][xIndex].type;
 
+}
+
+uint8_t MapChipField::GetMapChipSubIDByIndex(uint32_t xIndex, uint32_t yIndex) { 
+
+	//if (xIndex < 0 || kNumBlockHorizontal - 1 < xIndex) {
+	//	return MapChipType ::kBlank;
+	//}
+	//if (yIndex < 0 || kNumBlockVirtical - 1 < yIndex) {
+	//	return MapChipType ::kBlank;
+	//}
+
+	return mapChipData_.data[yIndex][xIndex].subID;
 }
 
 KamataEngine::Vector3 MapChipField::GetMapChipPositionByIndex(uint32_t xIndex, uint32_t yIndex) { 

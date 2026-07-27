@@ -133,17 +133,12 @@ void GameScene::Initialize() {
 
 
 	mapChipField_ = new MapChipField();
-	mapChipField_->LoadMapChipCsv("Resources/block.csv");
+	mapChipField_->LoadMapChipCsv("Resources/stage1.csv");
 
-	GenerateBlocks();
-	KamataEngine::Vector3 playerPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
-	
-	player_ = new Player();
-	player_->Initialize(model_, modelAttack_, &camera_, playerPos);
-	player_->SetMapChipField(mapChipField_);
+	GenerateField();
 
-	deathParticles_ = new DeathParticles();
-	deathParticles_->Initialize(modelDeathParticles_, &camera_, playerPos);
+
+
 
 	//KamataEngine::Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
 	//enemy_ = new Enemy();
@@ -151,22 +146,6 @@ void GameScene::Initialize() {
 
 
 
-	for (int32_t i = 0; i < kMaxEnemy; i++) {
-		Enemy* newEnemy = new Enemy();
-		Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(20 * i, 5); 
-		newEnemy->Initialize(modelEnemy_, &camera_, enemyPos);
-		newEnemy->SetGameScene(this);
-		enemies_.push_back(newEnemy);
-		
-	}
-
-	for (int32_t i = 0; i < kMaxEnemy; i++) {
-		ShieldEnemy* newShieldEnemy = new ShieldEnemy();
-		Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(20 * i, 10);
-		newShieldEnemy->Initialize(modelShieldEnemy_, &camera_, enemyPos);
-		newShieldEnemy->SetGameScene(this);
-		shieldEnemies_.push_back(newShieldEnemy);
-	}
 
 
 
@@ -212,6 +191,8 @@ void GameScene::Initialize() {
 
 	InitializeRandom();
 
+	reloadRequseted = false;
+
 }
 
 void GameScene::Update() {
@@ -255,6 +236,10 @@ void GameScene::Update() {
 	ImGui::InputFloat3("InputFloat3", inputFloat3);
 	ImGui::SliderFloat3("InputFloat3", inputFloat3,0.0f,1.0f);
 
+	if (ImGui::Button("Reload")) {
+		reloadRequseted = true;
+	}
+
 	ImGui::End();
 
 	ImGui::ShowDemoWindow();
@@ -277,6 +262,7 @@ void GameScene::Draw() {
 	Model::PreDraw();
 
 	//model_->Draw(worldTransform_, debugCamera_->GetCamera());
+	
 	if (!player_->GetIsDead()) {
 		player_->Draw();
 	}
@@ -328,7 +314,7 @@ void GameScene::Draw() {
 	fade_->Draw();
 }
 
-void GameScene::GenerateBlocks() {
+void GameScene::GenerateField() {
 
 	uint32_t numBlockVirtcal = mapChipField_->GetNumBlockVirtical();
 	uint32_t numBlockHorizontal = mapChipField_->GetNumBlockHorizontal();
@@ -342,13 +328,52 @@ void GameScene::GenerateBlocks() {
 
 	for (uint32_t y = 0; y < numBlockVirtcal; y++) {
 		for (uint32_t x = 0; x < numBlockHorizontal; x++) {
-			if (mapChipField_->GetMapChipTypeByIndex(x,y) == MapChipType::kBlock) {
-				WorldTransform* worldTransform = new WorldTransform();
-				worldTransform->Initialize();
-				worldTransformBlocks_[y][x] = worldTransform;
-				worldTransformBlocks_[y][x]->translation_ = mapChipField_->GetMapChipPositionByIndex(x,y);
-			
-			
+			//if (mapChipField_->GetMapChipTypeByIndex(x,y) == MapChipType::kBlock) {
+			//	WorldTransform* worldTransform = new WorldTransform();
+			//	worldTransform->Initialize();
+			//	worldTransformBlocks_[y][x] = worldTransform;
+			//	worldTransformBlocks_[y][x]->translation_ = mapChipField_->GetMapChipPositionByIndex(x,y);
+			//}
+
+			switch (mapChipField_->GetMapChipTypeByIndex(x, y)) {
+			    case MapChipType::kBlock: {
+
+					WorldTransform* worldTransform = new WorldTransform();
+					worldTransform->Initialize();
+
+				    worldTransformBlocks_[y][x] = worldTransform;
+				    worldTransformBlocks_[y][x]->translation_ = mapChipField_->GetMapChipPositionByIndex(x, y);
+				    break;
+			    }
+
+			case MapChipType::kPlayer: {
+
+				    player_ = new Player();
+				    KamataEngine::Vector3 playerPos = mapChipField_->GetMapChipPositionByIndex(x, y);
+				    player_->Initialize(model_, modelAttack_, &camera_, playerPos);
+				    player_->SetMapChipField(mapChipField_);
+
+				    deathParticles_ = new DeathParticles();
+				    deathParticles_->Initialize(modelDeathParticles_, &camera_, playerPos);
+				    break;
+			    }
+
+			case MapChipType::kEnemy:
+
+				switch (mapChipField_->GetMapChipSubIDByIndex(x, y)) {
+
+				case 0:
+					CreateEnemy(x, y);
+					break;
+
+				case 1:
+					CreateShieldEnemy(x, y);
+					break;
+				}
+
+				break;
+
+
 			}
 
 		}
@@ -356,6 +381,24 @@ void GameScene::GenerateBlocks() {
 	}
 
 
+}
+
+void GameScene::CreateEnemy(const uint32_t& x, const uint32_t& y) {
+	
+	Enemy* newEnemy = new Enemy();
+	Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(x,y);
+	newEnemy->Initialize(modelEnemy_, &camera_, enemyPos);
+	newEnemy->SetGameScene(this);
+	enemies_.push_back(newEnemy);
+}
+
+void GameScene::CreateShieldEnemy(const uint32_t& x, const uint32_t& y) {
+	ShieldEnemy* newShieldEnemy = new ShieldEnemy();
+	Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(x,y);
+	newShieldEnemy->Initialize(modelShieldEnemy_, &camera_, enemyPos);
+	newShieldEnemy->SetGameScene(this);
+	shieldEnemies_.push_back(newShieldEnemy);
+	
 }
 
 void GameScene::PhaseChange() {

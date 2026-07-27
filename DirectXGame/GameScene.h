@@ -35,7 +35,10 @@ public:
 	void Update();
 	void Draw();
 
-	void GenerateBlocks();
+	void GenerateField();
+
+	void CreateEnemy(const uint32_t& x, const uint32_t& y);
+	void CreateShieldEnemy(const uint32_t& x, const uint32_t& y);
 
 	//フェーズ関数
 	void PhaseChange();
@@ -52,6 +55,7 @@ public:
 	void CreateGuardEffect(KamataEngine::Vector3 pos);
 
 	bool GetIsFinished() const { return finished_; };
+	bool GetIsReloadRequseted() const { return reloadRequseted; };
 
 private:
 	uint32_t textureHandle_ = 0;
@@ -102,6 +106,8 @@ private:
 
 
 	bool finished_ = false;
+
+	bool reloadRequseted = false;
 
 
 	//HitEffect* enemyDeathParticles_ = nullptr;
