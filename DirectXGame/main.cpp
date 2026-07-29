@@ -2,12 +2,13 @@
 #include "KamataEngine.h"
 #include "GameScene.h"
 #include "TitleScene.h"
-
+#include "StageManager.h"
 
 
 using namespace KamataEngine;
 TitleScene* titleScene = nullptr;
 GameScene* gameScene_ = nullptr;
+StageManager* stageManager = nullptr;;
 
 enum class Scene {
 	kUnknown = 0,
@@ -55,8 +56,8 @@ void ChangeScene() {
 			delete titleScene;
 			titleScene = nullptr;
 
-			gameScene_ = new GameScene;
-			gameScene_->Initialize();
+			gameScene_ = new GameScene(stageManager);
+			gameScene_->Initialize(stageManager);
 		}
 		break;
 	case Scene::kGame:
@@ -73,8 +74,8 @@ void ChangeScene() {
 			delete gameScene_;
 			gameScene_ = nullptr;
 
-			gameScene_ = new GameScene;
-			gameScene_->Initialize();
+			gameScene_ = new GameScene(stageManager);
+			gameScene_->Initialize(stageManager);
 
 
 		}
@@ -93,14 +94,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 	ImGuiManager* imGuiManager = ImGuiManager::GetInstance();
 
-	gameScene_ = new GameScene();
-	titleScene = new TitleScene();
 
+	titleScene = new TitleScene();
+	stageManager = new StageManager();
+	gameScene_ = new GameScene(stageManager);
 
 	titleScene->Initialize();
-	gameScene_->Initialize();
+	stageManager->LoadStageDataCsv();
+	gameScene_->Initialize(stageManager);
 
-
+		
 	while (true) {
 
 		if (KamataEngine::Update()) {
@@ -130,6 +133,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	delete titleScene;
 	delete gameScene_;
+	delete stageManager;
 
 	titleScene = nullptr;
 	gameScene_ = nullptr;

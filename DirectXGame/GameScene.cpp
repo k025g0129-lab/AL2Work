@@ -6,9 +6,9 @@
 
 using namespace KamataEngine;
 
-GameScene::GameScene() { 
+GameScene::GameScene(StageManager* stageManager) { 
 
-	Initialize();
+	Initialize(stageManager);
 
 }
 
@@ -65,7 +65,9 @@ GameScene::~GameScene() {
 }
 
 
-void GameScene::Initialize() {
+void GameScene::Initialize(StageManager* stageManager) {
+
+	stageManager_ = stageManager;
 	textureHandle_ = TextureManager::Load("matyacap.png");
 	//soundDataHandle_ = Audio::GetInstance()->LoadWave("mokugyo.wav");
 
@@ -137,8 +139,10 @@ void GameScene::Initialize() {
 
 	GenerateField();
 
+	const StageManager::StageData& stageData = stageManager_->GetCurrentStageData();
 
-
+	std::string stageFileName = "Resources/" + stageData.name + ".csv";
+	mapChipField_->LoadMapChipCsv(stageFileName);
 
 	//KamataEngine::Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
 	//enemy_ = new Enemy();
@@ -192,6 +196,7 @@ void GameScene::Initialize() {
 	InitializeRandom();
 
 	reloadRequseted = false;
+
 
 }
 

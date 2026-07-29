@@ -11,6 +11,8 @@
 #include "HitEffect.h"
 #include "ShieldEnemy.h"
 #include "GuardEffect.h"
+#include "StageManager.h"
+
 
 class GameScene{
 public:
@@ -26,12 +28,12 @@ public:
 	
 public:
 
-	GameScene();
+	GameScene(StageManager* stageManager);
 	~GameScene();
 
 
-
-	void Initialize();
+		
+	void Initialize(StageManager* stageManager);
 	void Update();
 	void Draw();
 
@@ -113,4 +115,7 @@ private:
 	//HitEffect* enemyDeathParticles_ = nullptr;
 	std::list<HitEffect*> enemyDeathParticless_;
 	std::list<GuardEffect*> enemyGuardParticless_;
+
+	StageManager* stageManager_ = nullptr;
+
 };
