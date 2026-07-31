@@ -13,19 +13,23 @@ public:
 
 	void LoadStageDataCsv();
 	const StageData& GetStageData(int32_t index) const { 
-		assert(index);
+		assert(index >= 0);
+		assert(index < static_cast<int32_t>(stageDatas_.size()));
+
 		return stageDatas_[index];
 	
 	}
 
 	void SetCurrentStageIndex(int32_t index) { 
-		assert(index);
+		assert(index >= 0);
+		assert(index < static_cast<int32_t>(stageDatas_.size()));
+
 		currentStageIndex_ = index;
 	
 	};
 
 	int32_t GetCurrentStageIndex() const { return currentStageIndex_; };
-
+		
 	const StageData& GetCurrentStageData() const { 
 		return GetStageData(currentStageIndex_);
 	};

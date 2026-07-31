@@ -8,7 +8,7 @@
 using namespace KamataEngine;
 TitleScene* titleScene = nullptr;
 GameScene* gameScene_ = nullptr;
-StageManager* stageManager = nullptr;;
+StageManager* stageManager = new StageManager();
 
 enum class Scene {
 	kUnknown = 0,
@@ -57,7 +57,7 @@ void ChangeScene() {
 			titleScene = nullptr;
 
 			gameScene_ = new GameScene(stageManager);
-			gameScene_->Initialize(stageManager);
+			//gameScene_->Initialize(stageManager);
 		}
 		break;
 	case Scene::kGame:
@@ -75,7 +75,7 @@ void ChangeScene() {
 			gameScene_ = nullptr;
 
 			gameScene_ = new GameScene(stageManager);
-			gameScene_->Initialize(stageManager);
+			//gameScene_->Initialize(stageManager);
 
 
 		}
@@ -96,12 +96,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 
 	titleScene = new TitleScene();
-	stageManager = new StageManager();
-	gameScene_ = new GameScene(stageManager);
+	//gameScene_ = new GameScene(stageManager);
 
 	titleScene->Initialize();
 	stageManager->LoadStageDataCsv();
-	gameScene_->Initialize(stageManager);
+	gameScene_ = new GameScene(stageManager);
 
 		
 	while (true) {

@@ -4,6 +4,7 @@
 #include "Player.h"
 #include "KamataEngine.h"
 #include "function.h"
+#include <Windows.h>
 
 void CameraController::Initialize(KamataEngine::Camera* camera) { 
 	
@@ -50,6 +51,15 @@ void CameraController::Draw() {
 
 void CameraController::Reset() {
 
+    if (camera_ == nullptr) {
+		MessageBoxA(nullptr, "camera_ is nullptr", "CameraController Error", MB_OK);
+		return;
+	}
+
+	if (target_ == nullptr) {
+		MessageBoxA(nullptr, "target_ is nullptr", "CameraController Error", MB_OK);
+		return;
+	}
 	const KamataEngine::WorldTransform& targetWorldTransform = target_->GetWorldTransform();
 	camera_->translation_.x = targetWorldTransform.translation_.x + targetOffset_.x;
 	camera_->translation_.y = targetWorldTransform.translation_.y + targetOffset_.y;

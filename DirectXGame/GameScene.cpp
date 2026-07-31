@@ -135,14 +135,25 @@ void GameScene::Initialize(StageManager* stageManager) {
 
 
 	mapChipField_ = new MapChipField();
-	mapChipField_->LoadMapChipCsv("Resources/stage1.csv");
-
-	GenerateField();
-
+	stageManager_->SetCurrentStageIndex(0);
 	const StageManager::StageData& stageData = stageManager_->GetCurrentStageData();
 
 	std::string stageFileName = "Resources/" + stageData.name + ".csv";
+		
 	mapChipField_->LoadMapChipCsv(stageFileName);
+
+	GenerateField();
+
+	assert(player_ != nullptr && "ステージCSVにP0がありません");
+	
+	//stageManager_->	SetCurrentStageIndex(0);
+	//const StageManager::StageData& stageData = stageManager_->GetCurrentStageData();
+		
+
+
+
+	//std::string stageFileName = "Resources/" + stageData.name + ".csv";
+	//mapChipField_->LoadMapChipCsv(stageFileName);
 
 	//KamataEngine::Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(5,5); 
 	//enemy_ = new Enemy();
