@@ -18,7 +18,11 @@ private:
 	// ========================================
 	struct Particle {
 
+		// 本体
 		KamataEngine::WorldTransform worldTransform;
+
+		// 縁取り用
+		KamataEngine::WorldTransform outlineWorldTransform;
 
 		// Player周囲の角度
 		float angle = 0.0f;
@@ -49,7 +53,7 @@ private:
 
 	// 全粒共通の色
 	KamataEngine::ObjectColor color_;
-
+	KamataEngine::ObjectColor outlineColor_;
 	// 粒生成タイマー
 	uint32_t spawnTimer_ = 0;
 
@@ -60,7 +64,8 @@ private:
 	static inline const float kApproachSpeed = 0.07f;
 
 	// 最初の粒サイズ
-	static inline const float kParticleScale = 0.3f;
+	static inline const float kParticleScale = 1.0f;
+	static inline const float kOutlineScale = 1.25f;
 
 	// Playerから出現する距離
 	static inline const float kMinSpawnRadius = 2.0f;

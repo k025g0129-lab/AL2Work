@@ -471,7 +471,7 @@ void GameScene::GenerateField() {
 
 				    player_ = new Player();
 				    KamataEngine::Vector3 playerPos = mapChipField_->GetMapChipPositionByIndex(x, y);
-				    player_->Initialize(modelBody_, modelArm_, modelTire_, modelPlayerAttackEffect_, modelEnemyDeathEffect_, &camera_, playerPos);
+				    player_->Initialize(modelBody_, modelArm_, modelTire_, modelPlayerAttackEffect_, modelDeathParticles_, &camera_, playerPos);
 				    player_->SetMapChipField(mapChipField_);
 
 				    deathParticles_ = new DeathParticles();

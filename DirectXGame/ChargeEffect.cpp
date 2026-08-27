@@ -20,9 +20,12 @@ void ChargeEffect::Initialize(KamataEngine::Model* model, KamataEngine::Camera* 
 	// ========================================
 
 	color_.Initialize();
+	outlineColor_.Initialize();
 
 	// 通常チャージ色
 	color_.SetColor({0.2f, 0.7f, 1.0f, 1.0f});
+	// 薄い黒
+	outlineColor_.SetColor({0.1f, 0.1f, 0.1f, 0.15f});
 
 	spawnTimer_ = 0;
 
@@ -33,8 +36,11 @@ void ChargeEffect::Initialize(KamataEngine::Model* model, KamataEngine::Camera* 
 	for (Particle& particle : particles_) {
 
 		particle.worldTransform.Initialize();
+		particle.outlineWorldTransform.Initialize();
 
 		particle.worldTransform.scale_ = {0.0f, 0.0f, 0.0f};
+		particle.outlineWorldTransform.scale_ = {0.0f, 0.0f, 0.0f};
+
 
 		particle.angle = 0.0f;
 
@@ -152,16 +158,37 @@ void ChargeEffect::Update(const KamataEngine::Vector3& playerPos, bool isChargin
 		float scale = kParticleScale * scaleRate;
 
 		particle.worldTransform.scale_ = {scale, scale, scale};
+		// ========================================
+		// 縁取り
+		// ========================================
+
+		// 座標
+		particle.outlineWorldTransform.translation_ = particle.worldTransform.translation_;
+
+		// 回転
+		particle.outlineWorldTransform.rotation_ = particle.worldTransform.rotation_;
+
+		// 本体より少し大きい
+		particle.outlineWorldTransform.scale_ = {
+
+		    scale * kOutlineScale, scale * kOutlineScale, scale * kOutlineScale
+
+		};
+
+		// 本体より少し奥
+		particle.outlineWorldTransform.translation_.z += 0.05f;
 
 		// ========================================
 		// 行列
 		// ========================================
 
 		MakeAffineMatrix(&particle.worldTransform);
+		MakeAffineMatrix(&particle.outlineWorldTransform);
 	}
 }
 
 void ChargeEffect::Draw() {
+
 
 	if (model_ == nullptr || camera_ == nullptr) {
 
@@ -174,6 +201,16 @@ void ChargeEffect::Draw() {
 
 			continue;
 		}
+
+		// ========================================
+		// 縁取りを先に描画
+		// ========================================
+
+		model_->Draw(particle.outlineWorldTransform, *camera_, &outlineColor_);
+
+		// ========================================
+		// 本体
+		// ========================================
 
 		model_->Draw(particle.worldTransform, *camera_, &color_);
 	}
