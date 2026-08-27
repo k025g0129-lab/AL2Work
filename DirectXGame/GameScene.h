@@ -6,6 +6,8 @@
 #include "MapChipField.h"
 #include "CameraController.h"
 #include "Enemy.h"
+#include "EnemyMini.h"
+#include "Boss.h"
 #include "DeathParticles.h"
 #include "Fade.h"
 #include "HitEffect.h"
@@ -23,6 +25,7 @@ public:
 		kFadeIn,
 		kPlay,
 		kDeath,
+		kClear,
 		kFadeOut,
 	};
 	
@@ -41,6 +44,8 @@ public:
 
 	void CreateEnemy(const uint32_t& x, const uint32_t& y);
 	void CreateShieldEnemy(const uint32_t& x, const uint32_t& y);
+	void CreateEnemyMini(const uint32_t& x, const uint32_t& y);
+	void CreateBoss(const uint32_t& x, const uint32_t& y, bool isClearBoss);
 
 	//フェーズ関数
 	void PhaseChange();
@@ -59,19 +64,26 @@ public:
 	bool GetIsFinished() const { return finished_; };
 	bool GetIsReloadRequseted() const { return reloadRequseted; };
 
+	void CreateEnemyMini(const KamataEngine::Vector3& pos);
+
 private:
 	uint32_t textureHandle_ = 0;
-	uint32_t soundDataHandle_ = 0;
+	uint32_t soundDataHandle_ = 0;	
 	uint32_t voiceHandle_ = 0;
 
 
-	KamataEngine::Model* model_ = nullptr;
+	KamataEngine::Model* modelBody_ = nullptr;
+	KamataEngine::Model* modelArm_ = nullptr;
+	KamataEngine::Model* modelTire_ = nullptr;
 	KamataEngine::Model* modelBlock_ = nullptr;
 	KamataEngine::Model* modelSkydome_ = nullptr;
 	KamataEngine::Model* modelEnemy_	 = nullptr;
+	KamataEngine::Model* modelEnemyMini_	 = nullptr;
+	KamataEngine::Model* modelBoss_	 = nullptr;
 	KamataEngine::Model* modelShieldEnemy_ = nullptr;
 	KamataEngine::Model* modelDeathParticles_ = nullptr;
-	KamataEngine::Model* modelAttack_ = nullptr;
+	KamataEngine::Model* modelPlayerAttackEffect_ = nullptr;
+	KamataEngine::Model* modelEnemyAttackEffect_ = nullptr;
 	KamataEngine::Model* modelEnemyDeathEffect_ = nullptr;
 	KamataEngine::Model* modelEnemyGuardEffect_ = nullptr;
 
@@ -88,6 +100,8 @@ private:
 
 	std::list<Enemy*> enemies_;
 	std::list<ShieldEnemy*> shieldEnemies_;
+	std::list<EnemyMini*> miniEnemies_;
+	std::list<Boss*> bosss_;
 
 	//Enemy* enemy_ = nullptr;
 	Skydome* skydome_ = nullptr;
@@ -118,4 +132,18 @@ private:
 
 	StageManager* stageManager_ = nullptr;
 
+	//1supe-suki- 
+	uint32_t pressSpaceTextureHandle_ = 0;
+	KamataEngine::Sprite* pressSpaceSprite_ = nullptr;
+
+	// ゲームオーバーUI
+	uint32_t gameOverTextureHandle_ = 0;
+	KamataEngine::Sprite* gameOverSprite_ = nullptr;
+	// クリアUI
+	uint32_t clearTextureHandle_ = 0;
+	KamataEngine::Sprite* clearSprite_ = nullptr;
+
+	uint32_t resultTimer_ = 0;
+
+	bool isClearBossDefeated_ = false;
 };

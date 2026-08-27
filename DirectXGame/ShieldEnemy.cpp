@@ -165,7 +165,7 @@ void ShieldEnemy::OnCollision(Player* player) {
 		return;
 	}
 
-	if (player->isAttack()) {
+	if (player->isDash()) {
 
 		//向き合っているか
 		if (player->GetLRDirection() != lrDirection_) {

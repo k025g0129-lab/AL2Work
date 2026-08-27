@@ -93,6 +93,38 @@ float EaseOutSine(float self, float target, float t, float maxT) {
 
 }
 
+float EaseOutQuint(float self, float target, float t, float maxT) { 
+	float tt = t / maxT;
+
+	tt = std::clamp(tt, 0.0f, 1.0f);
+
+	float ease = 1.0f - powf(1.0f - tt, 5.0f);
+
+	return self * (1.0f - ease) + target * ease;
+
+
+}
+
+float EaseOutElastic(float self, float target, float t, float maxT) {
+	float tt = t / maxT;
+	tt = std::clamp(tt, 0.0f, 1.0f);
+
+	const float c4 = (2.0f * std::numbers::pi_v<float>) / 3.0f;
+
+	float ease;
+
+	if (tt == 0.0f) {
+		ease = 0.0f;
+	} else if (tt == 1.0f) {
+		ease = 1.0f;
+	} else {
+		ease = powf(2.0f, -10.0f * tt) * sinf((tt * 10.0f - 0.75f) * c4) + 1.0f;
+	}
+
+	return self * (1.0f - ease) + target * ease;
+
+}
+
 KamataEngine::Vector3 Lerp(const KamataEngine::Vector3& a, const KamataEngine::Vector3& b, float t) {
 	KamataEngine::Vector3 aaa;
 	aaa.x = a.x + (b.x - a.x) * t;
@@ -121,6 +153,28 @@ KamataEngine::Vector3 Vector3Sub(KamataEngine::Vector3 a, KamataEngine::Vector3 
 	c.z = a.z - b.z;
 
 	return c;
+}
+
+KamataEngine::Vector3 Vector3toFloatMul(KamataEngine::Vector3 a, float b) {
+	KamataEngine::Vector3 re;
+	
+	re = a;
+	re.x /= b;
+	re.y /= b;
+	re.z /= b;
+	
+	
+	
+	return re;
+}
+
+KamataEngine::Vector3 Vector3Average(KamataEngine::Vector3 a, KamataEngine::Vector3 b) {
+	KamataEngine::Vector3 re;
+
+	re = Vector3Add(a, b);
+	re = Vector3toFloatMul(re, 2.0f);
+
+	return re;
 }
 
 float RadToDeg(float radian) {

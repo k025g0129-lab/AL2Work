@@ -71,8 +71,6 @@ void Enemy::Update() {
 
 		break;
 
-
-
 	}
 
 	MakeAffineMatrix(&worldTransform_);
@@ -118,7 +116,7 @@ void Enemy::OnCollision(const Player* player) {
 	   return;
 	}
 
-   if (player->isAttack()) {
+   if (player->isDash()) {
 		isCollisionDisabled_ = true;
 		behaviorRequest_ = Behavior::kDeath;
    }

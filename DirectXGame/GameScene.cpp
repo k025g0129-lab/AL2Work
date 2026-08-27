@@ -14,7 +14,9 @@ GameScene::GameScene(StageManager* stageManager) {
 
 GameScene::~GameScene() { 
 	delete sprite_; 
-	delete model_;
+	delete modelBody_;
+	delete modelArm_;
+	delete modelTire_;
 	delete debugCamera_;
 	delete player_;
 	delete deathParticles_;
@@ -22,10 +24,13 @@ GameScene::~GameScene() {
 	delete modelBlock_;
 	delete modelSkydome_;
 	delete modelEnemy_;
+	delete modelEnemyMini_;
+	delete modelBoss_;
 	delete modelShieldEnemy_;
 	delete modelEnemyDeathEffect_;
 	delete modelEnemyGuardEffect_;
-	delete modelAttack_;
+	delete modelPlayerAttackEffect_;
+	delete modelEnemyAttackEffect_;
 	delete modelDeathParticles_;
 	delete skydome_;
 	delete mapChipField_;
@@ -38,8 +43,16 @@ GameScene::~GameScene() {
 		delete enemy;
 	}
 
+	for (EnemyMini* enemyMini : miniEnemies_) {
+		delete enemyMini;
+	}
+
 	for (ShieldEnemy* shieldEnemiy : shieldEnemies_) {
 		delete shieldEnemiy;
+	}
+
+	for (Boss* boss : bosss_) {
+		delete boss;
 	}
 
 	for (HitEffect* enemyDeathParticles_ : enemyDeathParticless_) {
@@ -53,6 +66,8 @@ GameScene::~GameScene() {
 
 	enemies_.clear();
 	shieldEnemies_.clear();
+	miniEnemies_.clear();
+	bosss_.clear();
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {	
@@ -62,6 +77,15 @@ GameScene::~GameScene() {
 
 
 	worldTransformBlocks_.clear();
+
+	delete pressSpaceSprite_;
+	delete gameOverSprite_;
+	delete clearSprite_;
+	pressSpaceSprite_ = nullptr;
+	gameOverSprite_ = nullptr;
+	clearSprite_ = nullptr;
+
+
 }
 
 
@@ -72,13 +96,18 @@ void GameScene::Initialize(StageManager* stageManager) {
 	//soundDataHandle_ = Audio::GetInstance()->LoadWave("mokugyo.wav");
 
 	sprite_ = Sprite::Create(textureHandle_, {100, 50});
-	model_ = Model::CreateFromOBJ("player", true);
+	modelBody_ = Model::CreateFromOBJ("player", true);
+	modelArm_ = Model::CreateFromOBJ("playerArm", true);
+	modelTire_ = Model::CreateFromOBJ("playerTire", true);
 	modelBlock_ = Model::CreateFromOBJ("block", true);
 	modelSkydome_ = Model::CreateFromOBJ("skydome",true);
 	modelEnemy_ = Model::CreateFromOBJ("enemy", true);
+	modelBoss_ = Model::CreateFromOBJ("boss", true);
+	modelEnemyMini_ = Model::CreateFromOBJ("enemyMini", true);
 	modelShieldEnemy_ = Model::CreateFromOBJ("shieldEnemy", true);
 	modelDeathParticles_ = Model::CreateFromOBJ("deathParticle", true);
-	modelAttack_ = Model::CreateFromOBJ("hit_effect", true);
+	modelPlayerAttackEffect_ = Model::CreateFromOBJ("hit_effect", true);
+	modelEnemyAttackEffect_ = Model::CreateFromOBJ("enemyHit_effect", true);
 	modelEnemyDeathEffect_ = Model::CreateFromOBJ("particle", true);
 	modelEnemyGuardEffect_ = Model::CreateFromOBJ("ring", true);
 
@@ -209,6 +238,22 @@ void GameScene::Initialize(StageManager* stageManager) {
 	reloadRequseted = false;
 
 
+	gameOverTextureHandle_ = TextureManager::Load("gameOver.png");
+	gameOverSprite_ = Sprite::Create(gameOverTextureHandle_, {0.0f,0.0f});
+
+	clearTextureHandle_ = TextureManager::Load("clear.png");
+	clearSprite_ = Sprite::Create(clearTextureHandle_, {0.0f,0.0f});
+
+	pressSpaceTextureHandle_ = TextureManager::Load("plessSpaceKey.png");
+	pressSpaceSprite_ = Sprite::Create(pressSpaceTextureHandle_, {320.0f, 450.0f});
+
+	gameOverSprite_->SetSize({1280.0f, 720.0f});
+	clearSprite_->SetSize({1280.0f, 720.0f});
+	pressSpaceSprite_->SetSize({640.0f, 360.0f});
+
+	resultTimer_ = 0;
+
+	isClearBossDefeated_ = false;
 }
 
 void GameScene::Update() {
@@ -230,6 +275,33 @@ void GameScene::Update() {
 		return false;
 	});
 
+	miniEnemies_.remove_if([](EnemyMini* enemyMini) {
+		if (enemyMini->GetIsDead()) {
+			delete enemyMini;
+			return true;
+		}
+		return false;
+	});
+
+
+	 bosss_.remove_if([this](Boss* boss) {
+		if (boss->GetIsDead()) {
+
+			// =============================
+			// クリア対象Bossを倒した
+			// =============================
+			if (boss->GetIsClearBoss()) {
+
+				isClearBossDefeated_ = true;
+			}
+
+			delete boss;
+
+			return true;
+		}
+
+		return false;
+	});
 
 	PhaseChange();
 	fade_->Update();
@@ -269,7 +341,10 @@ void GameScene::Draw() {
 	Sprite::PreDraw();
 
 	//sprite_->Draw();
+	Sprite::PreDraw();
 
+
+	Sprite::PostDraw();
 
 
 	Sprite::PostDraw();
@@ -277,13 +352,14 @@ void GameScene::Draw() {
 	
 	Model::PreDraw();
 
-	//model_->Draw(worldTransform_, debugCamera_->GetCamera());
+	//modelBody_->Draw(worldTransform_, debugCamera_->GetCamera());
 	
 	if (!player_->GetIsDead()) {
 		player_->Draw();
 	}
 
 	skydome_->Draw();
+
 	for (Enemy* enemy : enemies_) {
 		enemy->Draw();
 	}
@@ -291,7 +367,15 @@ void GameScene::Draw() {
 	for (ShieldEnemy* shieldEnemy : shieldEnemies_) {
 		shieldEnemy->Draw();
 	}
-		
+
+	for (EnemyMini* enemyMini : miniEnemies_) {
+		enemyMini->Draw();
+	}
+
+	for (Boss* boss : bosss_) {
+		boss->Draw();
+	}
+
 	for (HitEffect* enemyDeathParticles : enemyDeathParticless_) {
 		
 		enemyDeathParticles->Draw();
@@ -324,10 +408,31 @@ void GameScene::Draw() {
 	PrimitiveDrawer::GetInstance()->DrawLine3d({0, 0, 0}, {0, 10, 0}, {1.0f, 0.0f, 0.0f, 1.0f});
 			
 
-
 	Model::PostDraw();
 
 	fade_->Draw();
+
+
+	if (phase_ == Phase::kFadeOut && fade_->IsFinished()) {
+
+		Sprite::PreDraw();
+
+		gameOverSprite_->Draw();
+		pressSpaceSprite_->Draw();
+
+		Sprite::PostDraw();
+	}
+
+	if (phase_ == Phase::kClear && fade_->IsFinished()) {
+
+		Sprite::PreDraw();
+
+		clearSprite_->Draw();
+		pressSpaceSprite_->Draw();
+
+		Sprite::PostDraw();
+	}
+
 }
 
 void GameScene::GenerateField() {
@@ -366,7 +471,7 @@ void GameScene::GenerateField() {
 
 				    player_ = new Player();
 				    KamataEngine::Vector3 playerPos = mapChipField_->GetMapChipPositionByIndex(x, y);
-				    player_->Initialize(model_, modelAttack_, &camera_, playerPos);
+				    player_->Initialize(modelBody_, modelArm_, modelTire_, modelPlayerAttackEffect_, modelEnemyDeathEffect_, &camera_, playerPos);
 				    player_->SetMapChipField(mapChipField_);
 
 				    deathParticles_ = new DeathParticles();
@@ -384,6 +489,14 @@ void GameScene::GenerateField() {
 
 				case 1:
 					CreateShieldEnemy(x, y);
+					break;
+				case 2:
+					CreateEnemyMini(x, y);
+					break;
+
+
+				case 4:
+					CreateBoss(x, y,true);
 					break;
 				}
 
@@ -417,6 +530,34 @@ void GameScene::CreateShieldEnemy(const uint32_t& x, const uint32_t& y) {
 	
 }
 
+void GameScene::CreateEnemyMini(const uint32_t& x, const uint32_t& y) { 
+	
+	EnemyMini* newEnemyMini = new EnemyMini();
+	Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(x, y);
+	newEnemyMini->Initialize(modelEnemyMini_, &camera_, enemyPos);
+	newEnemyMini->SetGameScene(this);
+	newEnemyMini->SetMapChipField(mapChipField_);
+	miniEnemies_.push_back(newEnemyMini);
+
+}
+
+void GameScene::CreateBoss(const uint32_t& x, const uint32_t& y, bool isClearBoss) { 
+
+
+	Boss* newBoss = new Boss();
+
+	Vector3 enemyPos = mapChipField_->GetMapChipPositionByIndex(x, y);
+
+	newBoss->Initialize(modelBoss_, modelEnemyAttackEffect_ ,& camera_, enemyPos);
+
+	newBoss->SetGameScene(this);
+
+	// このBossを倒したらCLEARか
+	newBoss->SetIsClearBoss(isClearBoss);
+
+	bosss_.push_back(newBoss);
+}
+
 void GameScene::PhaseChange() {
 
 	switch (phase_) {
@@ -437,6 +578,12 @@ void GameScene::PhaseChange() {
 			phase_ = Phase::kDeath;
 			const Vector3& deathParticlesPos = player_->GetWorldPos();
 			deathParticles_->Initialize(modelDeathParticles_, &camera_, deathParticlesPos);
+
+		} else if (isClearBossDefeated_) {
+
+			phase_ = Phase::kClear;
+
+			fade_->Start(Fade::Status::FadeOut, 1.0f);
 		}
 
 		break;
@@ -448,6 +595,18 @@ void GameScene::PhaseChange() {
 			fade_->Start(Fade::Status::FadeOut, 1.0f);
 		}
 		
+
+		break;
+
+	case GameScene::Phase::kClear:
+
+		if (fade_->IsFinished()) {
+
+			if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+
+				finished_ = true;
+			}
+		}
 
 		break;
 
@@ -479,6 +638,14 @@ void GameScene::GamePlayPhase() {
 		shieldEnemy->Update();
 	}
 
+	for (EnemyMini* enemyMini : miniEnemies_) {
+		enemyMini->Update();
+	}
+
+	for (Boss* boss : bosss_) {
+		boss->Update();
+	}
+
 	for (HitEffect* enemyDeathParticles : enemyDeathParticless_) {
 		enemyDeathParticles->Update();
 	}
@@ -487,10 +654,9 @@ void GameScene::GamePlayPhase() {
 		enemyGuardParticles_->Update();
 	}
 
-	// カメラコントロールの更新
 	cameraController->Update();
 
-	// カメラの更新
+	// カメラ行列は更新
 	CameraUpdate();
 
 	// ブロックの更新
@@ -512,6 +678,14 @@ void GameScene::DeathParticlePhase() {
 
 	for (ShieldEnemy* shieldEnemy : shieldEnemies_) {
 		shieldEnemy->Update();
+	}
+
+	for (EnemyMini* enemyMini : miniEnemies_) {
+		enemyMini->Update();
+	}
+
+	for (Boss* boss : bosss_) {
+		boss->Update();
 	}
 
 	// デスパーティクルが存在するなら...???
@@ -599,8 +773,225 @@ void GameScene::CheckAllCollisions() {
 	#pragma endregion
 
 
+	#pragma region プレイヤー攻撃とMini敵
 
+	for (EnemyMini* enemyMini : miniEnemies_) {
+
+		if (enemyMini->GetIsCollisionDisabled()) {
+			continue;
+		}
+
+		AABB enemyAABB = enemyMini->GetAABB();
+
+		// ==============================
+		// 右腕
+		// ==============================
+
+		if (player_->IsRightArmAttacking()) {
+
+			AABB attackAABB = player_->GetRightArmAttackAABB();
+
+			if (IsCollisionAABB2D(attackAABB, enemyAABB)) {
+
+				enemyMini->OnAttackCollision();
+				continue;
+			}
+		}
+
+		// ==============================
+		// 左腕
+		// ==============================
+
+		if (player_->IsLeftArmAttacking()) {
+
+			AABB attackAABB = player_->GetLeftArmAttackAABB();
+
+			if (IsCollisionAABB2D(attackAABB, enemyAABB)) {
+
+				enemyMini->OnAttackCollision();
+				continue;
+			}
+		}
+
+		// ==============================
+		// 右ChargeShot
+		// ==============================
+
+		if (player_->IsRightChargeShotActive()) {
+
+			AABB attackAABB = player_->GetRightChargeShotAABB();
+
+			if (IsCollisionAABB2D(attackAABB, enemyAABB)) {
+
+				enemyMini->OnAttackCollision();
+				continue;
+			}
+		}
+
+		// ==============================
+		// 左ChargeShot
+		// ==============================
+
+		if (player_->IsLeftChargeShotActive()) {
+
+			AABB attackAABB = player_->GetLeftChargeShotAABB();
+
+			if (IsCollisionAABB2D(attackAABB, enemyAABB)) {
+
+				enemyMini->OnAttackCollision();
+				continue;
+			}
+		}
+	}
+
+#pragma endregion
+
+	#pragma region プレイヤー攻撃とBossu
+	for (Boss* boss : bosss_) {
+
+		if (boss->GetIsCollisionDisabled()) {
+			continue;
+		}
+
+		AABB bossAABB = boss->GetAABB();
+
+		// =================================
+		// 右腕
+		// =================================
+		if (player_->IsRightArmAttacking()) {
+
+			AABB attackAABB = player_->GetRightArmAttackAABB();
+
+			if (IsCollisionAABB2D(attackAABB, bossAABB)) {
+
+				boss->OnAttackCollision(player_->GetRightArmAttackID());
+			}
+		}
+
+		// =================================
+		// 左腕
+		// =================================
+		if (player_->IsLeftArmAttacking()) {
+
+			AABB attackAABB = player_->GetLeftArmAttackAABB();
+
+			if (IsCollisionAABB2D(attackAABB, bossAABB)) {
+
+				boss->OnAttackCollision(player_->GetLeftArmAttackID());
+			}
+		}
+		// =================================
+		// 右ChargeShot
+		// =================================
+		if (player_->IsRightChargeShotActive()) {
+
+			AABB attackAABB = player_->GetRightChargeShotAABB();
+
+			if (IsCollisionAABB2D(attackAABB, bossAABB)) {
+
+				boss->OnAttackCollision(player_->GetRightChargeShotAttackID());
+
+				// 命中した弾を消す
+				player_->DisableRightChargeShot();
+			}
+		}
+
+		// =================================
+		// 左ChargeShot
+		// =================================
+		if (player_->IsLeftChargeShotActive()) {
+
+			AABB attackAABB = player_->GetLeftChargeShotAABB();
+
+			if (IsCollisionAABB2D(attackAABB, bossAABB)) {
+
+				boss->OnAttackCollision(player_->GetLeftChargeShotAttackID());
+
+				// 命中した弾を消す
+				player_->DisableLeftChargeShot();
+			}
+		}
+	}
+
+#pragma endregion
+
+	#pragma region 自キャラとMini敵
+
+	{
+		AABB playerAABB = player_->GetAABB();
+
+		for (EnemyMini* enemyMini : miniEnemies_) {
+
+			// 死亡中などは無視
+			if (enemyMini->GetIsCollisionDisabled()) {
+				continue;
+			}
+
+			AABB miniAABB = enemyMini->GetAABB();
+
+			if (IsCollisionAABB2D(playerAABB, miniAABB)) {
+
+				// Playerだけ死亡
+				player_->OnEnemyCollision();
+			}
+		}
+	}
+
+#pragma endregion
+
+	#pragma region 自キャラとBoss
+
+	{
+		AABB playerAABB = player_->GetAABB();
+
+		for (Boss* boss : bosss_) {
+
+			if (boss->GetIsCollisionDisabled()) {
+				continue;
+			}
+
+			AABB bossAABB = boss->GetAABB();
+
+			if (IsCollisionAABB2D(playerAABB, bossAABB)) {
+
+				// Playerだけ死亡
+				player_->OnEnemyCollision();
+			}
+		}
+	}
+
+#pragma endregion
+
+	#pragma region 自キャラとBoss衝撃波
+
+	{
+		AABB playerAABB = player_->GetAABB();
+
+		for (Boss* boss : bosss_) {
+
+			// 衝撃波が出てない
+			if (!boss->IsShockWaveActive()) {
+				continue;
+			}
+
+			AABB shockWaveAABB = boss->GetShockWaveAABB();
+
+			if (IsCollisionAABB2D(playerAABB, shockWaveAABB)) {
+
+				// Player死亡
+				player_->OnEnemyCollision();
+
+				// 当たった衝撃波は消す
+				boss->DisableShockWave();
+			}
+		}
+	}
+
+#pragma endregion
 }
+
+
+
 
 void GameScene::CreateHitEffect(KamataEngine::Vector3 pos) { 
 	HitEffect* newEnemyDeathParticles = HitEffect::Create(pos);
@@ -616,3 +1007,15 @@ void GameScene::CreateGuardEffect(KamataEngine::Vector3 pos) {
 	
 }
 
+void GameScene::CreateEnemyMini(const KamataEngine::Vector3& pos) {
+
+	EnemyMini* newEnemyMini = new EnemyMini();
+
+	newEnemyMini->Initialize(modelEnemyMini_, &camera_, pos);
+
+	newEnemyMini->SetGameScene(this);
+	newEnemyMini->SetMapChipField(mapChipField_);
+
+	miniEnemies_.push_back(newEnemyMini);
+
+}

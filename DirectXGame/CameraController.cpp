@@ -23,6 +23,7 @@ void CameraController::Update() {
 
 	targetCameraPos.x = targetWorldTransform.translation_.x + targetOffset_.x + target_->GetVelocity().x * kVelocityBias;
 	targetCameraPos.y = targetWorldTransform.translation_.y + targetOffset_.y + target_->GetVelocity().x * kVelocityBias;
+	targetCameraPos.y += 2.5f;
 	targetCameraPos.z = targetWorldTransform.translation_.z + targetOffset_.z + target_->GetVelocity().x * kVelocityBias;
 
 	camera_->translation_ = Lerp(camera_->translation_,targetCameraPos,kInterpolationRate);
